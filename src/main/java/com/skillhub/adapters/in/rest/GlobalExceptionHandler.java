@@ -5,6 +5,7 @@ import com.skillhub.core.exception.ForbiddenException;
 import com.skillhub.core.exception.NotFoundException;
 import com.skillhub.core.exception.UnprocessableException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -51,6 +52,13 @@ public class GlobalExceptionHandler {
                 (a, b) -> a));
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
             .body(new ErrorResponse("VALIDATION_FAILED", "Request validation failed", details));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        log.warn("Data integrity violation", e);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorResponse.of("CONFLICT", "Resource already exists or violates a data constraint"));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

@@ -95,6 +95,28 @@ class ElementApiIT {
     }
 
     @Test
+    void invalidTypeIsUnprocessable() {
+        createCategory();
+        Map<String, Object> body = new java.util.HashMap<>(skillRequest("bad-type-skill"));
+        body.put("type", "WIDGET");
+        ResponseEntity<String> r = rest.exchange("/api/elements", HttpMethod.POST,
+            new HttpEntity<>(body, jsonHeaders()), String.class);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(r.getBody()).contains("type");
+    }
+
+    @Test
+    void invalidVisibilityIsUnprocessable() {
+        createCategory();
+        Map<String, Object> body = new java.util.HashMap<>(skillRequest("bad-vis-skill"));
+        body.put("visibility", "SECRET");
+        ResponseEntity<String> r = rest.exchange("/api/elements", HttpMethod.POST,
+            new HttpEntity<>(body, jsonHeaders()), String.class);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(r.getBody()).contains("visibility");
+    }
+
+    @Test
     void unknownSlugIsNotFound() {
         ResponseEntity<String> r = rest.exchange("/api/elements/nope-404", HttpMethod.GET,
             new HttpEntity<>(jsonHeaders()), String.class);

@@ -5,6 +5,7 @@ import com.skillhub.core.exception.ForbiddenException;
 import com.skillhub.core.exception.NotFoundException;
 import com.skillhub.core.exception.UnprocessableException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -36,6 +37,14 @@ class GlobalExceptionHandlerTest {
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(r.getBody().code()).isEqualTo("UNPROCESSABLE");
         assertThat(r.getBody().details()).isEqualTo("field=version");
+    }
+
+    @Test
+    void dataIntegrityViolationMapsTo409() {
+        ResponseEntity<ErrorResponse> r = handler.handleDataIntegrityViolation(
+            new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(r.getBody().code()).isEqualTo("CONFLICT");
     }
 
     @Test
