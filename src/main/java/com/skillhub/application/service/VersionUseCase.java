@@ -13,9 +13,15 @@ import com.skillhub.domain.port.ClockPort;
 import com.skillhub.domain.port.StoragePort;
 import com.skillhub.domain.service.AccessService;
 import com.skillhub.domain.service.ArchiveService;
+import com.skillhub.core.exception.UnprocessableException;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -95,5 +101,62 @@ public class VersionUseCase {
             node.put("size", f.size());
         }
         return root.toString();
+    }
+
+    @Transactional(readOnly = true)
+    public ElementVersion getVersion(String slug, String version, User viewer) {
+        Element element = elements.findBySlug(slug)
+            .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (viewer != null && !access.canRead(element, viewer)) {
+            throw new ForbiddenException("Element is not visible to you: " + slug);
+        }
+        return "latest".equals(version)
+            ? versions.findLatestPublished(element.getId())
+                .orElseThrow(() -> new NotFoundException("No published versions for: " + slug))
+            : versions.findByElementIdAndVersion(element.getId(), version)
+                .orElseThrow(() -> new NotFoundException(
+                    "Version not found: " + slug + "@" + version));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ElementVersion> listVersions(String slug, User viewer) {
+        Element element = elements.findBySlug(slug)
+            .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (viewer != null && !access.canRead(element, viewer)) {
+            throw new ForbiddenException("Element is not visible to you: " + slug);
+        }
+        return versions.findAllByElementIdOrderByCreatedAtDesc(element.getId());
+    }
+
+    @Transactional
+    public byte[] getArchive(ElementVersion version) {
+        byte[] data = storage.download(version.getS3_key());
+        Element element = version.getElement();
+        element.setDownloadsCount(element.getDownloadsCount() + 1);
+        elements.save(element);
+        return data;
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getFile(ElementVersion version, String path) {
+        String normalized = path.replace('\\', '/');
+        if (normalized.startsWith("/") || normalized.equals("..")
+                || normalized.contains("../") || normalized.contains("/..")) {
+            throw new UnprocessableException("Illegal file path", path);
+        }
+        byte[] archive = storage.download(version.getS3_key());
+        try (ZipArchiveInputStream zin = new ZipArchiveInputStream(
+                new ByteArrayInputStream(archive), "UTF-8", true, true)) {
+            ZipArchiveEntry entry;
+            while ((entry = zin.getNextZipEntry()) != null) {
+                if (!entry.isDirectory()
+                        && entry.getName().replace('\\', '/').equals(normalized)) {
+                    return zin.readAllBytes();
+                }
+            }
+        } catch (IOException e) {
+            throw new UnprocessableException("Stored archive is corrupted", e.getMessage());
+        }
+        throw new NotFoundException("File not found in version: " + path);
     }
 }

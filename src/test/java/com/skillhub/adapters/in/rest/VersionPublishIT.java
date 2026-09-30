@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -96,6 +97,7 @@ class VersionPublishIT {
     static byte[] zip(String version) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(bos)) {
+            zos.setLevel(Deflater.NO_COMPRESSION);
             zos.putNextEntry(new ZipEntry("manifest.json"));
             zos.write(("{\"name\":\"pub-skill\",\"version\":\"" + version
                 + "\",\"description\":\"d\",\"type\":\"SKILL\"}")
