@@ -54,6 +54,54 @@ SkillHub — корпоративное хранилище скиллов, ск�
 - **Storage** — S3/MinIO: архивы версий, раздача через presigned-URL с коротким TTL после проверки прав.
 - **Web UI** — каталог, карточки, browse файлов, админка.
 
+### Чистая архитектура (Hexagonal, Ports & Adapters)
+
+Код пишется на чистой (гексагональной) архитектуре: **домен отделён от реализации**, особенно в части данных. Правило зависимостей: внутренние слои не знают о внешних; всё связывается через Dependency Injection.
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    adapters/in                        │
+│   REST (Spring Web)      Security (фильтры, SSO)     │
+└──────────────────────────┬───────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────┐
+│                  application (use cases)              │
+│   ElementService, VersionService, PackService, ...    │
+└──────────────────────────┬───────────────────────────┘
+                           ▼ (зависит только от портов)
+┌──────────────────────────────────────────────────────┐
+│                  domain (ядро, чистая Java)           │
+│   model (Element, ElementVersion, Team, ...)          │
+│   ports (интерфейсы):                                 │
+│     • ElementRepositoryPort, TeamRepositoryPort, ...  │
+│     • StoragePort, AuditPort, ClockPort               │
+└──────────────────────────┬───────────────────────────┘
+                           ▲ (адаптеры реализуют порты)
+┌──────────────────────────────────────────────────────┐
+│                    adapters/out                       │
+│   jpa/ (PostgreSQL + Spring Data)   s3/ (S3/MinIO)    │
+│   auth/ (Keycloak OIDC + API-токены)                  │
+└──────────────────────────────────────────────────────┘
+```
+
+**Слои:**
+
+1. **domain** — чистая Java, без Spring/JPA/S3 зависимостей:
+   - `model/` — доменные модели (Element, ElementVersion, Team, Category, User и т.д.); доменные модели **не являются** JPA-сущностями.
+   - `ports/` — интерфейсы, которые определяет домен: `ElementRepositoryPort`, `ElementVersionRepositoryPort`, `TeamRepositoryPort`, `CategoryRepositoryPort`, `UserRepositoryPort`, `StoragePort` (upload/download/delete/presigned), `AuditPort`, `IdGenerator`/`ClockPort` (для тестируемости).
+   - Доменные сервисы и инварианты (semver-правило, права доступа) — здесь.
+2. **application** — use cases (ElementService, VersionService, PackService, SearchService, SocialService): оркестрируют домен и порты, транзакционные границы, DTO. Зависят только от `domain`.
+3. **adapters/in** — driving-адаптеры: REST-контроллеры (Spring Web), security-фильтры (OIDC + API-токены), маппинг DTO ↔ доменные модели.
+4. **adapters/out** — driven-адаптеры, реализуют порты:
+   - `jpa/` — JPA-сущности + Spring Data репозитории + мапперы в доменные модели; реализуют `*RepositoryPort`.
+   - `s3/` — реализует `StoragePort` (S3/MinIO).
+   - `auth/` — реализация `AuthPort`/синхронизация пользователя из SSO.
+   - `config/` — Spring-конфигурация, wiring портов на адаптеры.
+
+**Сменяемость реализаций** — главное следствие архитектуры: замена S3/MinIO на другую файловую систему = новая реализация `StoragePort`; замена Keycloak на LDAP/другой IdP = новый driving-адаптер аутентификации; замена PostgreSQL на другую БД = новый `jpa/`-адаптер. Домен и use cases при этом не меняются.
+
+**Тестируемость**: use cases тестируются unit-тестами с моками портов без Spring-контекста; адаптеры — отдельными интеграционными тестами (Testcontainers).
+
 ## 3. Модель данных
 
 ### Element
@@ -153,9 +201,10 @@ Immutable-версия элемента.
 
 ## 7. Тестирование
 
-- Unit-тесты сервисов: JUnit 5 + Mockito.
-- Интеграционные: Testcontainers (PostgreSQL + MinIO).
-- API-тесты: MockMvc.
+- Unit-тесты use cases: JUnit 5 + Mockito, моки портов (без Spring-контекста).
+- Unit-тесты домена: чистые тесты инвариантов (semver, права).
+- Интеграционные адаптеры: Testcontainers (PostgreSQL + MinIO) — jpa/, s3/ адаптеры.
+- API-тесты: MockMvc / TestRestTemplate (через driving-адаптеры).
 - Ключевые сценарии: публикация → скачивание любой версии, права доступа, публикация и скачивание пака.
 - E2E для UI — вне первой итерации.
 
