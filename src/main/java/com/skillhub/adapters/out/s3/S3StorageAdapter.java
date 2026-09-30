@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -40,6 +41,9 @@ public class S3StorageAdapter implements StoragePort {
             .endpointOverride(URI.create(endpoint))
             .region(Region.US_EAST_1)
             .credentialsProvider(credentials)
+            .serviceConfiguration(S3Configuration.builder()
+                .pathStyleAccessEnabled(true)
+                .build())
             .build();
     }
 
@@ -48,6 +52,12 @@ public class S3StorageAdapter implements StoragePort {
             client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
         } catch (NoSuchBucketException e) {
             client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+            } else {
+                throw e;
+            }
         }
     }
 

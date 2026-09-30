@@ -6,6 +6,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import java.net.URI;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,9 +43,18 @@ class S3StorageAdapterIT {
     }
 
     @Test
-    void presignedUrlContainsKey() {
-        storage.upload("team/el/2.0.0.zip", "x".getBytes());
+    void presignedUrlDownloadsContent() throws Exception {
+        byte[] data = "presigned-content".getBytes();
+        storage.upload("team/el/2.0.0.zip", data);
         String url = storage.presignedGetUrl("team/el/2.0.0.zip", Duration.ofMinutes(5));
-        assertThat(url).contains("team/el/2.0.0.zip").contains("X-Amz-Signature");
+        assertThat(url).contains("X-Amz-Signature");
+        assertThat(url).doesNotContain(BUCKET + ".");
+
+        java.net.http.HttpClient httpClient = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpResponse<byte[]> response = httpClient.send(
+            java.net.http.HttpRequest.newBuilder(URI.create(url)).GET().build(),
+            java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).isEqualTo(data);
     }
 }
