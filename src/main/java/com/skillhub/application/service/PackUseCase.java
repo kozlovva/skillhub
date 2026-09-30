@@ -47,10 +47,17 @@ public class PackUseCase {
         if (pack.getType() != ElementType.PACK) {
             throw new UnprocessableException("Element is not a PACK: " + packSlug, null);
         }
+        if (elementSlug.equals(packSlug)) {
+            throw new UnprocessableException("Pack cannot contain itself: " + packSlug, null);
+        }
         if (!access.canPublish(pack.getTeam(), user)) {
             throw new ForbiddenException("Only OWNER/MAINTAINER can modify this pack");
         }
         Element element = elementUseCase.getBySlug(elementSlug, user);
+        if (element.getType() == ElementType.PACK) {
+            throw new UnprocessableException(
+                "Nested packs are not allowed: " + elementSlug, null);
+        }
         validateConstraint(versionConstraint);
         return packContents.save(PackContent.builder()
             .packElement(pack)
@@ -77,16 +84,20 @@ public class PackUseCase {
                 .append(pack.getSlug()).append("\",\"contents\":[");
             boolean first = true;
             for (PackContent content : contents) {
+                Element element = content.getElement();
+                if (!access.canRead(element, viewer)) {
+                    continue;
+                }
                 ElementVersion version = versionUseCase.getVersion(
-                    content.getElement().getSlug(), content.getVersionConstraint(), null);
+                    element.getSlug(), content.getVersionConstraint(), viewer);
                 if (!first) {
                     manifest.append(",");
                 }
                 first = false;
-                manifest.append("{\"element\":\"").append(content.getElement().getSlug())
+                manifest.append("{\"element\":\"").append(element.getSlug())
                     .append("\",\"version\":\"").append(version.getVersion()).append("\"}");
                 copyElementArchive(zos, version,
-                    content.getElement().getSlug() + "-" + version.getVersion() + "/");
+                    element.getSlug() + "-" + version.getVersion() + "/");
             }
             manifest.append("]}");
 

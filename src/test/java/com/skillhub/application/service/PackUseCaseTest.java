@@ -117,7 +117,7 @@ class PackUseCaseTest {
         when(packContents.findAllByPackId(pack.getId()))
             .thenReturn(List.of(PackContent.builder()
                 .packElement(pack).element(skill).versionConstraint("1.0.0").build()));
-        when(versionUseCase.getVersion("skill-a", "1.0.0", null)).thenReturn(versionOf(skill));
+        when(versionUseCase.getVersion("skill-a", "1.0.0", owner)).thenReturn(versionOf(skill));
         when(storage.download(any())).thenReturn(zipOf(Map.of("SKILL.md", "# skill")));
 
         byte[] packZip = useCase.downloadPack("my-pack", owner);
@@ -137,6 +137,64 @@ class PackUseCaseTest {
         }
         assertThat(foundManifest).isTrue();
         assertThat(foundSkill).isTrue();
+    }
+
+    @Test
+    void selfReferenceIsUnprocessable() {
+        when(elementUseCase.getBySlug("my-pack", owner)).thenReturn(packElement());
+        assertThatThrownBy(() -> useCase.addContent("my-pack", "my-pack", "latest", owner))
+            .isInstanceOf(UnprocessableException.class);
+    }
+
+    @Test
+    void packElementAsContentIsUnprocessable() {
+        when(elementUseCase.getBySlug("my-pack", owner)).thenReturn(packElement());
+        Element otherPack = Element.builder().id(UUID.randomUUID()).slug("other-pack")
+            .type(ElementType.PACK).name("other-pack").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elementUseCase.getBySlug("other-pack", owner)).thenReturn(otherPack);
+        assertThatThrownBy(() -> useCase.addContent("my-pack", "other-pack", "latest", owner))
+            .isInstanceOf(UnprocessableException.class);
+    }
+
+    @Test
+    void downloadPackSkipsInaccessibleContent() throws Exception {
+        User outsider = User.builder().id(UUID.randomUUID()).ssoSubject("s2").email("e2")
+            .displayName("Outsider").admin(false).createdAt(Instant.now()).build();
+        Team otherTeam = Team.builder().id(UUID.randomUUID()).slug("t2").name("T2")
+            .createdAt(Instant.now()).build();
+        when(membership.roleOf(otherTeam.getId(), outsider.getId()))
+            .thenReturn(Optional.empty());
+
+        Element pack = packElement();
+        Element privateSkill = Element.builder().id(UUID.randomUUID()).slug("skill-private")
+            .type(ElementType.SKILL).name("skill-private").description("").team(otherTeam)
+            .tags(new String[0]).visibility(Visibility.TEAM).author(owner)
+            .latestVersion("1.0.0").downloadsCount(0)
+            .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elementUseCase.getBySlug("my-pack", outsider)).thenReturn(pack);
+        when(packContents.findAllByPackId(pack.getId()))
+            .thenReturn(List.of(PackContent.builder()
+                .packElement(pack).element(privateSkill).versionConstraint("1.0.0").build()));
+
+        byte[] packZip = useCase.downloadPack("my-pack", outsider);
+
+        String manifest = null;
+        boolean foundPrivate = false;
+        try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(packZip))) {
+            ZipEntry entry;
+            while ((entry = zin.getNextEntry()) != null) {
+                if (entry.getName().equals("manifest.json")) {
+                    manifest = new String(zin.readAllBytes(), StandardCharsets.UTF_8);
+                }
+                if (entry.getName().startsWith("skill-private-")) {
+                    foundPrivate = true;
+                }
+            }
+        }
+        assertThat(foundPrivate).isFalse();
+        assertThat(manifest).doesNotContain("skill-private");
     }
 
     static byte[] zipOf(Map<String, String> entries) {
