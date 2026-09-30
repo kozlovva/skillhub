@@ -82,7 +82,8 @@ class VersionUseCaseTest {
             return v;
         });
         useCase = new VersionUseCase(elements, versions, storage, audit,
-            new AccessService(membership), new ArchiveService(200, 10), clock);
+            new AccessService(membership), new ArchiveService(200, 10), clock,
+            java.time.Duration.ofMinutes(10));
     }
 
     @Test
@@ -111,5 +112,22 @@ class VersionUseCaseTest {
             .thenReturn(Optional.of(TeamRole.MEMBER));
         assertThatThrownBy(() -> useCase.publish("my-skill", zip("1.0.0"), null, owner))
             .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void getArchiveReturnsPresignedUrlAndIncrementsDownloads() {
+        ElementVersion version = ElementVersion.builder().id(UUID.randomUUID())
+            .element(element).version("1.0.0").s3_key("platform/my-skill/1.0.0.zip").build();
+        when(storage.presignedGetUrl(org.mockito.ArgumentMatchers.eq(
+                "platform/my-skill/1.0.0.zip"), any(java.time.Duration.class)))
+            .thenReturn("http://s3/platform/my-skill/1.0.0.zip?X-Amz-Signature=abc");
+
+        String url = useCase.getArchive(version);
+
+        assertThat(url).contains("X-Amz-Signature");
+        verify(storage).presignedGetUrl(
+            org.mockito.ArgumentMatchers.eq("platform/my-skill/1.0.0.zip"),
+            any(java.time.Duration.class));
+        verify(elements).incrementDownloads(element.getId());
     }
 }

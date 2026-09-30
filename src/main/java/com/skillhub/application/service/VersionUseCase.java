@@ -16,11 +16,13 @@ import com.skillhub.domain.service.ArchiveService;
 import com.skillhub.core.exception.UnprocessableException;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -34,13 +36,15 @@ public class VersionUseCase {
     private final AccessService access;
     private final ArchiveService archiveService;
     private final ClockPort clock;
+    private final Duration presignTtl;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public VersionUseCase(ElementRepositoryPort elements,
                           ElementVersionRepositoryPort versions,
                           StoragePort storage, AuditService audit,
                           AccessService access, ArchiveService archiveService,
-                          ClockPort clock) {
+                          ClockPort clock,
+                          @Value("${skillhub.storage.presign-ttl:10m}") Duration presignTtl) {
         this.elements = elements;
         this.versions = versions;
         this.storage = storage;
@@ -48,6 +52,7 @@ public class VersionUseCase {
         this.access = access;
         this.archiveService = archiveService;
         this.clock = clock;
+        this.presignTtl = presignTtl;
     }
 
     @Transactional
@@ -129,12 +134,9 @@ public class VersionUseCase {
     }
 
     @Transactional
-    public byte[] getArchive(ElementVersion version) {
-        byte[] data = storage.download(version.getS3_key());
-        Element element = version.getElement();
-        element.setDownloadsCount(element.getDownloadsCount() + 1);
-        elements.save(element);
-        return data;
+    public String getArchive(ElementVersion version) {
+        elements.incrementDownloads(version.getElement().getId());
+        return storage.presignedGetUrl(version.getS3_key(), presignTtl);
     }
 
     @Transactional(readOnly = true)

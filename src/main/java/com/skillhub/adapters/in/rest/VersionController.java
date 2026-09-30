@@ -5,7 +5,6 @@ import com.skillhub.adapters.in.security.CurrentUserResolver;
 import com.skillhub.application.service.VersionUseCase;
 import com.skillhub.domain.model.ElementVersion;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,17 +41,14 @@ public class VersionController {
     }
 
     @GetMapping("/{version}/download")
-    public ResponseEntity<byte[]> download(@PathVariable String slug,
-                                           @PathVariable String version,
-                                           Authentication auth) {
+    public ResponseEntity<Void> download(@PathVariable String slug,
+                                         @PathVariable String version,
+                                         Authentication auth) {
         ElementVersion v = versionUseCase.getVersion(slug, version, currentUser.resolve(auth));
-        byte[] data = versionUseCase.getArchive(v);
-        String filename = slug + "-" + v.getVersion() + ".zip";
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + filename + "\"")
-            .contentType(MediaType.parseMediaType("application/zip"))
-            .body(data);
+        String url = versionUseCase.getArchive(v);
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .location(java.net.URI.create(url))
+            .build();
     }
 
     @GetMapping("/{version}/files")

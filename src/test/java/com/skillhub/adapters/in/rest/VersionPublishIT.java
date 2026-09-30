@@ -86,6 +86,12 @@ class VersionPublishIT {
                     "tags", new String[]{}, "visibility", "PUBLIC"),
                     jsonHeaders()), String.class);
         }
+
+        jdbc.update("""
+            DELETE FROM element_versions
+            WHERE element_id = (SELECT id FROM elements WHERE slug = 'pub-skill')
+            """);
+        jdbc.update("UPDATE elements SET latest_version = NULL WHERE slug = 'pub-skill'");
     }
 
     boolean elementExists(String slug) {

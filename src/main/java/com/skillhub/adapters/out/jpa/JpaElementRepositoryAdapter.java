@@ -40,4 +40,10 @@ public class JpaElementRepositoryAdapter implements ElementRepositoryPort {
     public List<Element> findAll() {
         return jpa.findAll().stream().map(ElementJpaMapper::toDomain).toList();
     }
+
+    @Override
+    @Transactional
+    public void incrementDownloads(java.util.UUID elementId) {
+        jpa.incrementDownloads(elementId);
+    }
 }
