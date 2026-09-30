@@ -29,8 +29,9 @@ class JpaElementRepositoryAdapterIT {
             .admin(true).createdAt(Instant.now()).build());
         Team team = teams.save(Team.builder()
             .slug("platform").name("Platform").createdAt(Instant.now()).build());
-        Category cat = categories.save(Category.builder()
-            .slug("dev").name("Разработка").build());
+        Category cat = categories.findBySlug("dev")
+            .orElseGet(() -> categories.save(Category.builder()
+                .slug("dev").name("Разработка").build()));
 
         Element saved = elements.save(Element.builder()
             .slug("pdf-skill").type(ElementType.SKILL).name("PDF Skill").description("d")

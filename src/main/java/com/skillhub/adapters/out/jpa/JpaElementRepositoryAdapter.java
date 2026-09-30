@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -32,5 +33,11 @@ public class JpaElementRepositoryAdapter implements ElementRepositoryPort {
     @Transactional(readOnly = true)
     public boolean existsBySlug(String slug) {
         return jpa.existsBySlug(slug);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Element> findAll() {
+        return jpa.findAll().stream().map(ElementJpaMapper::toDomain).toList();
     }
 }
