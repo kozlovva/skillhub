@@ -9,7 +9,9 @@ import com.skillhub.domain.model.User;
 import com.skillhub.domain.port.ApiTokenRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -52,5 +54,19 @@ public class JpaApiTokenRepositoryAdapter implements ApiTokenRepositoryPort {
             .lastUsedAt(t.getLastUsedAt())
             .expiresAt(t.getExpiresAt())
             .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApiToken> findByUserId(java.util.UUID userId) {
+        return jpa.findAllByUserId(userId).stream().map(t -> ApiToken.builder()
+            .id(t.getId())
+            .user(UserJpaMapper.toDomain(t.getUser()))
+            .name(t.getName())
+            .tokenHash(t.getTokenHash())
+            .createdAt(t.getCreatedAt())
+            .lastUsedAt(t.getLastUsedAt())
+            .expiresAt(t.getExpiresAt())
+            .build()).toList();
     }
 }
