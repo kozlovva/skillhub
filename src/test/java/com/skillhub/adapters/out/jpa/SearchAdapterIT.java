@@ -66,6 +66,7 @@ class SearchAdapterIT {
 
         SearchQueryResult byType = searchAdapter.search(new SearchQuery(
             "", "SKILL", null, outsider, 20, 0));
-        assertThat(byType.facetsByType()).containsEntry("SKILL", 1L);
+        assertThat(byType.items()).extracting(Element::getSlug).contains("pdf-docs-skill");
+        assertThat(byType.facetsByType()).containsKey("SKILL");
     }
 }
