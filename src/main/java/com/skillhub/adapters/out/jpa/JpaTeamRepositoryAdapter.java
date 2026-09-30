@@ -6,7 +6,9 @@ import com.skillhub.domain.model.Team;
 import com.skillhub.domain.port.TeamRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,5 +25,11 @@ public class JpaTeamRepositoryAdapter implements TeamRepositoryPort {
     @Override
     public Optional<Team> findBySlug(String slug) {
         return jpa.findBySlug(slug).map(TeamJpaMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Team> findAll() {
+        return jpa.findAll().stream().map(TeamJpaMapper::toDomain).toList();
     }
 }
