@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/skillhub
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/skillhub
     username: ${DB_USER:skillhub}
     password: ${DB_PASSWORD:skillhub}
   jpa:
