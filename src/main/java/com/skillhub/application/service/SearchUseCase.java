@@ -24,6 +24,7 @@ public class SearchUseCase {
         UUID userId = viewer == null
             ? UUID.nameUUIDFromBytes("anonymous".getBytes())
             : viewer.getId();
-        return searchPort.search(new SearchQuery(q, type, category, userId, limit, offset));
+        boolean admin = viewer != null && viewer.isAdmin();
+        return searchPort.search(new SearchQuery(q, type, category, userId, admin, limit, offset));
     }
 }

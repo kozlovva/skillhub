@@ -29,6 +29,7 @@ public class JpaElement {
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "author_id", nullable = false)
     private JpaUser author;
     @Column(name = "latest_version") private String latestVersion;
+    @Column(name = "latest_changelog", nullable = false) private String latestChangelog = "";
     @Column(name = "downloads_count", nullable = false) private long downloadsCount;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;

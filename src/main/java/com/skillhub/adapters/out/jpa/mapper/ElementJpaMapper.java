@@ -19,6 +19,7 @@ public final class ElementJpaMapper {
             .visibility(Visibility.valueOf(e.getVisibility()))
             .author(UserJpaMapper.toDomain(e.getAuthor()))
             .latestVersion(e.getLatestVersion())
+            .latestChangelog(e.getLatestChangelog() == null ? "" : e.getLatestChangelog())
             .downloadsCount(e.getDownloadsCount())
             .createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt())
             .build();
@@ -33,6 +34,7 @@ public final class ElementJpaMapper {
             .tags(d.getTags()).visibility(d.getVisibility().name())
             .author(UserJpaMapper.toEntity(d.getAuthor()))
             .latestVersion(d.getLatestVersion())
+            .latestChangelog(d.getLatestChangelog() == null ? "" : d.getLatestChangelog())
             .downloadsCount(d.getDownloadsCount())
             .createdAt(d.getCreatedAt()).updatedAt(d.getUpdatedAt())
             .build();

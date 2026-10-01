@@ -17,6 +17,8 @@ public class Element {
     private Visibility visibility;
     private User author;
     private String latestVersion;
+    @Builder.Default
+    private String latestChangelog = "";
     private long downloadsCount;
     private Instant createdAt;
     private Instant updatedAt;

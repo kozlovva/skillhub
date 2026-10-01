@@ -23,10 +23,11 @@ public class SearchAdapter implements SearchPort {
 
     private static final String WHERE = """
         (e.visibility = 'PUBLIC'
+         OR :admin = true
          OR e.team_id IN (SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
         AND (CAST(:type AS text) IS NULL OR e.type = :type)
         AND (CAST(:category AS text) IS NULL OR e.category_id = (SELECT c.id FROM categories c WHERE c.slug = :category))
-        AND (:q = '' OR e.search_vector @@ plainto_tsquery('simple', :q)
+        AND (:q = '' OR e.search_vector @@ plainto_tsquery('russian', :q)
              OR e.name ILIKE ('%' || :q || '%'))
         """;
 
@@ -39,9 +40,10 @@ public class SearchAdapter implements SearchPort {
         List<JpaElement> items = em.createNativeQuery(
                 "SELECT e.* FROM elements e WHERE " + WHERE +
                 " ORDER BY CASE WHEN :q = '' THEN 0 " +
-                "ELSE ts_rank(e.search_vector, plainto_tsquery('simple', :q)) END DESC, " +
+                "ELSE ts_rank(e.search_vector, plainto_tsquery('russian', :q)) END DESC, " +
                 "e.downloads_count DESC LIMIT :limit OFFSET :offset", JpaElement.class)
             .setParameter("userId", q.userId())
+            .setParameter("admin", q.admin())
             .setParameter("q", query)
             .setParameter("type", q.type())
             .setParameter("category", q.category())
@@ -52,6 +54,7 @@ public class SearchAdapter implements SearchPort {
         long total = ((Number) em.createNativeQuery(
                 "SELECT COUNT(*) FROM elements e WHERE " + WHERE)
             .setParameter("userId", q.userId())
+            .setParameter("admin", q.admin())
             .setParameter("q", query)
             .setParameter("type", q.type())
             .setParameter("category", q.category())
@@ -63,6 +66,7 @@ public class SearchAdapter implements SearchPort {
                 "SELECT e.type AS type, COUNT(*) AS cnt FROM elements e WHERE " + WHERE +
                 " GROUP BY e.type")
             .setParameter("userId", q.userId())
+            .setParameter("admin", q.admin())
             .setParameter("q", query)
             .setParameter("type", q.type())
             .setParameter("category", q.category())

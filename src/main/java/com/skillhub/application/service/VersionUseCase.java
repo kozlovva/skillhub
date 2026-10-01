@@ -88,6 +88,7 @@ public class VersionUseCase {
             .build());
 
         element.setLatestVersion(info.manifestVersion());
+        element.setLatestChangelog(changelog == null ? "" : changelog);
         element.setUpdatedAt(clock.now());
         elements.save(element);
 

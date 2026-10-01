@@ -95,6 +95,7 @@ class VersionUseCaseTest {
             org.mockito.ArgumentMatchers.eq("platform/my-skill/1.0.0.zip"),
             any(byte[].class));
         assertThat(element.getLatestVersion()).isEqualTo("1.0.0");
+        assertThat(element.getLatestChangelog()).isEqualTo("init");
         verify(audit).log(any(), anyString(), any(), any());
     }
 
