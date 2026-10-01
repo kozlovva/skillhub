@@ -25,6 +25,7 @@ skillhub:
     access-key: ${S3_ACCESS_KEY:minioadmin}
     secret-key: ${S3_SECRET_KEY:minioadmin}
     bucket: ${S3_BUCKET:skillhub}
+    ensure-bucket: ${S3_ENSURE_BUCKET:true}
     presign-ttl: 10m
   api-token-prefix: skh_
   upload:
