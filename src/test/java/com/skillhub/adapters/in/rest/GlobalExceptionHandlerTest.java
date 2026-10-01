@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,5 +55,29 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ErrorResponse> r = handler.handleForbidden(new ForbiddenException("denied"));
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(r.getBody().code()).isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void malformedJsonMapsTo422() {
+        ResponseEntity<ErrorResponse> r = handler.handleUnreadable(
+            new HttpMessageNotReadableException("bad json"));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(r.getBody().code()).isEqualTo("MALFORMED_REQUEST");
+    }
+
+    @Test
+    void unsupportedMethodMapsTo405() {
+        ResponseEntity<ErrorResponse> r = handler.handleMethodNotSupported(
+            new HttpRequestMethodNotSupportedException("PUT"));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(r.getBody().code()).isEqualTo("METHOD_NOT_ALLOWED");
+    }
+
+    @Test
+    void missingParameterMapsTo422() {
+        ResponseEntity<ErrorResponse> r = handler.handleMissingParameter(
+            new MissingServletRequestParameterException("path", "String"));
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(r.getBody().code()).isEqualTo("MISSING_PARAMETER");
     }
 }
