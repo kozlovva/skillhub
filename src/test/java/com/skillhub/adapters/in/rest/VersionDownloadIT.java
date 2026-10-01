@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +32,35 @@ class VersionDownloadIT extends VersionPublishIT {
             .GET()
             .build();
         return noRedirectClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    HttpResponse<String> getNoRedirectAnon(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(
+                URI.create("http://localhost:" + port + path))
+            .GET()
+            .build();
+        return noRedirectClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    @Test
+    void anonymousDownloadOfTeamElementIsForbidden() throws Exception {
+        rest.exchange("/api/elements", HttpMethod.POST, new HttpEntity<>(Map.of(
+            "slug", "anon-team-skill", "type", "SKILL", "name", "AnonTeam",
+            "description", "d", "team", "pub-team", "tags", new String[]{},
+            "visibility", "TEAM"), jsonHeaders()), String.class);
+
+        HttpResponse<String> r = getNoRedirectAnon(
+            "/api/elements/anon-team-skill/versions/latest/download");
+        assertThat(r.statusCode()).isEqualTo(403);
+    }
+
+    @Test
+    void anonymousDownloadOfPublicElementIsPermitted() throws Exception {
+        publish("pub-skill", "6.0.0", "six");
+
+        HttpResponse<String> r = getNoRedirectAnon(
+            "/api/elements/pub-skill/versions/6.0.0/download");
+        assertThat(r.statusCode()).isEqualTo(302);
     }
 
     @Test

@@ -112,7 +112,7 @@ public class VersionUseCase {
     public ElementVersion getVersion(String slug, String version, User viewer) {
         Element element = elements.findBySlug(slug)
             .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
-        if (viewer != null && !access.canRead(element, viewer)) {
+        if (!access.canRead(element, viewer)) {
             throw new ForbiddenException("Element is not visible to you: " + slug);
         }
         return "latest".equals(version)
@@ -127,7 +127,7 @@ public class VersionUseCase {
     public List<ElementVersion> listVersions(String slug, User viewer) {
         Element element = elements.findBySlug(slug)
             .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
-        if (viewer != null && !access.canRead(element, viewer)) {
+        if (!access.canRead(element, viewer)) {
             throw new ForbiddenException("Element is not visible to you: " + slug);
         }
         return versions.findAllByElementIdOrderByCreatedAtDesc(element.getId());

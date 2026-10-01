@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.preauth.AbstractPreAuthen
 public class SecurityConfig {
 
     private final ApiTokenAuthFilter apiTokenAuthFilter;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,11 +33,15 @@ public class SecurityConfig {
         http
             .addFilterBefore(apiTokenAuthFilter, AbstractPreAuthenticatedProcessingFilter.class)
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/elements/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search").permitAll()
                 .requestMatchers("/api/**").authenticated()
-                .anyRequest().permitAll())
+                .anyRequest().denyAll())
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler))
             .oauth2ResourceServer(oauth -> oauth
                 .bearerTokenResolver(bearerTokenResolver)
                 .jwt(jwt -> {}))
