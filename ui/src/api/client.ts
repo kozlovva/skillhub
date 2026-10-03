@@ -18,6 +18,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export async function downloadFile(url: string, filename?: string): Promise<void> {
+  const response = await api.get<Blob>(url, { responseType: 'blob' });
+  const objectUrl = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = filename ?? '';
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export function toApiError(error: unknown): ApiError {
   const err = error as { response?: { status: number; data: { code?: string; message?: string; details?: unknown } }; message?: string };
   if (err.response) {
