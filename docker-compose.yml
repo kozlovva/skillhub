@@ -25,6 +25,18 @@ services:
       - "9001:9001"
     volumes:
       - miniodata:/data
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./docker/keycloak/realm-skillhub.json:/opt/keycloak/data/import/realm-skillhub.json:ro
+    ports:
+      - "8180:8080"
   api:
     build: .
     environment:
@@ -37,12 +49,16 @@ services:
       S3_SECRET_KEY: minioadmin
       S3_BUCKET: skillhub
       S3_ENSURE_BUCKET: "true"
+      OIDC_ISSUER: http://localhost:8180/realms/skillhub
+      OIDC_JWK_SET_URI: http://keycloak:8080/realms/skillhub/protocol/openid-connect/certs
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_started
+      keycloak:
         condition: service_started
   ui:
     build: ./ui
