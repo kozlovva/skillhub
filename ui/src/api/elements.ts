@@ -24,11 +24,11 @@ export const elements = {
     return (await api.post<VersionResponse>(`/api/elements/${slug}/versions`, form, { params })).data;
   },
   downloadVersionUrl(slug: string, version: string): string {
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
+    const base = import.meta.env.VITE_API_URL ?? '';
     return `${base}/api/elements/${slug}/versions/${version}/download`;
   },
   downloadFileUrl(slug: string, version: string, path: string): string {
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
+    const base = import.meta.env.VITE_API_URL ?? '';
     return `${base}/api/elements/${slug}/versions/${version}/files?path=${encodeURIComponent(path)}`;
   },
 };

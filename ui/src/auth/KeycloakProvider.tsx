@@ -23,8 +23,9 @@ export function useAuth() {
 }
 
 const keycloak = new Keycloak({
+  // VITE_OIDC_URL is the Keycloak auth-server BASE URL (e.g. http://localhost:8180), not the issuer.
   url: import.meta.env.VITE_OIDC_URL ?? 'http://localhost:8180',
-  realm: 'skillhub',
+  realm: import.meta.env.VITE_OIDC_REALM ?? 'skillhub',
   clientId: import.meta.env.VITE_OIDC_CLIENT_ID ?? 'skillhub-ui',
 });
 

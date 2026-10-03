@@ -22,6 +22,15 @@ describe('api client', () => {
     expect(api).toBeDefined();
   });
 
+  it('creates axios instance with same-origin base URL by default', async () => {
+    vi.stubEnv('VITE_API_URL', '');
+    const { api } = await import('./client');
+    expect(axios.create).toHaveBeenCalledWith(
+      expect.objectContaining({ baseURL: '' })
+    );
+    expect(api).toBeDefined();
+  });
+
   it('normalizes backend error to ApiError', async () => {
     const { toApiError } = await import('./client');
     const error = {

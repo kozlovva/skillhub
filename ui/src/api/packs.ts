@@ -9,7 +9,7 @@ export const packs = {
     return (await api.post<PackResponse>(`/api/packs/${slug}/contents`, { element, versionConstraint })).data;
   },
   downloadPackUrl(slug: string): string {
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
+    const base = import.meta.env.VITE_API_URL ?? '';
     return `${base}/api/packs/${slug}/versions/latest/download`;
   },
 };
