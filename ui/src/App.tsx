@@ -3,6 +3,9 @@ import AppLayout from './layout/AppLayout';
 import CatalogPage from './pages/CatalogPage';
 import ElementPage from './pages/ElementPage';
 import PackPage from './pages/PackPage';
+import TeamsPage from './pages/TeamsPage';
+import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import TokensPage from './pages/TokensPage';
 
 export default function App() {
   return (
@@ -11,9 +14,9 @@ export default function App() {
         <Route path="/" element={<CatalogPage />} />
         <Route path="/elements/:slug" element={<ElementPage />} />
         <Route path="/packs/:slug" element={<PackPage />} />
-        <Route path="/teams" element={<CatalogPage />} />
-        <Route path="/admin/categories" element={<CatalogPage />} />
-        <Route path="/tokens" element={<CatalogPage />} />
+        <Route path="/teams" element={<TeamsPage />} />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+        <Route path="/tokens" element={<TokensPage />} />
       </Route>
     </Routes>
   );
