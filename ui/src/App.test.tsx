@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 
 vi.mock('./auth/KeycloakProvider', () => ({
@@ -8,10 +9,13 @@ vi.mock('./auth/KeycloakProvider', () => ({
 }));
 
 test('renders catalog page with search', () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <MemoryRouter initialEntries={['/']}>
-      <App />
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
   expect(screen.getByRole('heading', { name: /skillhub/i })).toBeInTheDocument();
 });
