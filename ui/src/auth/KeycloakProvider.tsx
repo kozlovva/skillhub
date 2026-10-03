@@ -62,7 +62,10 @@ export default function KeycloakProvider({ children }: { children: ReactNode }) 
           ? (keycloak.tokenParsed as { preferred_username?: string }).preferred_username ?? null
           : null,
         login: () => keycloak.login(),
-        logout: () => keycloak.logout(),
+        logout: () => {
+          setAuthToken(null);
+          keycloak.logout();
+        },
       }}
     >
       {children}
