@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -11,6 +11,7 @@ import { downloadFile, toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
 import VersionTable from '../components/VersionTable';
+import FileTree from '../components/FileTree';
 import FavoriteButton from '../components/FavoriteButton';
 
 export default function ElementPage() {
@@ -21,6 +22,9 @@ export default function ElementPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [changelog, setChangelog] = useState('');
 
   const { data: element } = useQuery({
     queryKey: ['element', slug],
@@ -37,6 +41,21 @@ export default function ElementPage() {
   const { data: reviews } = useQuery({
     queryKey: ['reviews', slug],
     queryFn: () => social.reviews(slug!),
+  });
+
+  const selected = versions?.find((v) => v.version === (selectedVersion ?? element?.latestVersion))
+    ?? versions?.[0];
+
+  const publishMutation = useMutation({
+    mutationFn: (file: File) => elements.publishVersion(slug!, file, changelog || undefined),
+    onSuccess: () => {
+      showSuccess('Версия опубликована');
+      setChangelog('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      qc.invalidateQueries({ queryKey: ['versions', slug] });
+      qc.invalidateQueries({ queryKey: ['element', slug] });
+    },
+    onError: (e) => showError(toApiError(e).message),
   });
 
   const favoriteMutation = useMutation({
@@ -88,6 +107,7 @@ export default function ElementPage() {
           <VersionTable
             versions={versions}
             onDownload={(v) => {
+              setSelectedVersion(v);
               downloadFile(elements.downloadVersionUrl(slug!, v), `${slug}-${v}.zip`)
                 .catch((e) => showError(toApiError(e).message));
             }}
@@ -96,6 +116,45 @@ export default function ElementPage() {
           <Typography color="text.secondary">Версий пока нет</Typography>
         )}
       </Paper>
+
+      {selected && selected.files.length > 0 && (
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Файлы версии {selected.version}
+          </Typography>
+          <FileTree
+            files={selected.files}
+            onOpenFile={(path) => {
+              const fileName = path.split('/').pop();
+              downloadFile(elements.downloadFileUrl(slug!, selected.version, path), fileName)
+                .catch((e) => showError(toApiError(e).message));
+            }}
+          />
+        </Paper>
+      )}
+
+      {authenticated && (
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>Опубликовать новую версию</Typography>
+          <input
+            type="file"
+            accept=".zip"
+            ref={fileInputRef}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) publishMutation.mutate(f);
+            }}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            label="Changelog"
+            value={changelog}
+            onChange={(e) => setChangelog(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </Paper>
+      )}
 
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>Отзывы</Typography>
