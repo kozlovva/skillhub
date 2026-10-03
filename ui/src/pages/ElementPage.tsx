@@ -51,6 +51,7 @@ export default function ElementPage() {
       setReviewOpen(false);
       showSuccess('Отзыв сохранён');
       qc.invalidateQueries({ queryKey: ['reviews', slug] });
+      qc.invalidateQueries({ queryKey: ['social', slug] });
     },
     onError: (e) => showError(toApiError(e).message),
   });
