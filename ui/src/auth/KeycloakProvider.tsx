@@ -40,6 +40,9 @@ export default function KeycloakProvider({ children }: { children: ReactNode }) 
       setToken(keycloak.token ?? null);
       setAuthToken(keycloak.token ?? null);
       setReady(true);
+    }).catch(() => {
+      // Keycloak недоступен — показываем UI в анонимном режиме (публичный каталог)
+      setReady(true);
     });
     const refresh = setInterval(() => {
       if (keycloak.authenticated) {
