@@ -43,7 +43,8 @@ class PublicReadAccessIT {
         publicSlug = "anon-public-" + UUID.randomUUID();
         teamSlug = "anon-team-" + UUID.randomUUID();
 
-        var user = users.syncFromSso("anon-user-" + UUID.randomUUID(), "anon@skillhub.io", "Anon User");
+        var user = users.syncFromSso("anon-user-" + UUID.randomUUID(), "anon@skillhub.io",
+            "anon-user-" + UUID.randomUUID(), "Anon User");
         authHeader = "Bearer " + tokens.createToken(user, "anon").rawToken();
 
         UUID teamId = UUID.randomUUID();
@@ -129,7 +130,8 @@ class PublicReadAccessIT {
     @Test
     void authenticatedNonMemberCreateIsForbiddenWithBody() {
         var outsider = users.syncFromSso(
-            "anon-outsider-" + UUID.randomUUID(), "outsider@skillhub.io", "Outsider");
+            "anon-outsider-" + UUID.randomUUID(), "outsider@skillhub.io",
+            "anon-outsider-" + UUID.randomUUID(), "Outsider");
         String outsiderAuth = "Bearer " + tokens.createToken(outsider, "outsider").rawToken();
 
         Map<String, Object> body = Map.of(

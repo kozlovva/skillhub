@@ -26,8 +26,8 @@ $demoUserId = "11111111-1111-1111-1111-111111111111"
 $tokenHash = Sha256Hex $DemoToken
 
 $sql = @"
-INSERT INTO users (id, sso_subject, email, display_name, is_admin)
-VALUES ('$demoUserId', 'seed-admin', 'admin@skillhub.io', 'Demo Admin', TRUE)
+INSERT INTO users (id, sso_subject, username, email, display_name, is_admin)
+VALUES ('$demoUserId', 'seed-admin', 'seed-admin', 'admin@skillhub.io', 'Demo Admin', TRUE)
 ON CONFLICT (sso_subject) DO UPDATE SET is_admin = TRUE;
 
 INSERT INTO api_tokens (user_id, name, token_hash)

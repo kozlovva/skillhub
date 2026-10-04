@@ -27,7 +27,7 @@ class SocialApiIT {
 
     @BeforeEach
     void setUp() {
-        var user = users.syncFromSso("soc-user", "soc@skillhub.io", "Social User");
+        var user = users.syncFromSso("soc-user", "soc@skillhub.io", "soc-user", "Social User");
         authHeader = "Bearer " + tokens.createToken(user, "soc").rawToken();
 
         jdbc.update("""

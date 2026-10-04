@@ -18,15 +18,17 @@ public class UserSyncService {
     }
 
     @Transactional
-    public User syncFromSso(String subject, String email, String displayName) {
+    public User syncFromSso(String subject, String email, String username, String displayName) {
         return users.findBySsoSubject(subject)
             .map(u -> {
                 u.setEmail(email);
+                u.setUsername(username);
                 u.setDisplayName(displayName);
                 return users.save(u);
             })
             .orElseGet(() -> users.save(User.builder()
                 .ssoSubject(subject)
+                .username(username)
                 .email(email)
                 .displayName(displayName)
                 .admin(false)

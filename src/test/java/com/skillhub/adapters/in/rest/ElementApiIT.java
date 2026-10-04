@@ -27,7 +27,7 @@ class ElementApiIT {
 
     @BeforeEach
     void setUp() {
-        var user = users.syncFromSso("elem-user", "el@skillhub.io", "Element User");
+        var user = users.syncFromSso("elem-user", "el@skillhub.io", "elem-user", "Element User");
         authHeader = "Bearer " + tokens.createToken(user, "elem").rawToken();
 
         UUID teamId = UUID.randomUUID();

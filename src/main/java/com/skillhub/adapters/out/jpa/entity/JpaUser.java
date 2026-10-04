@@ -13,6 +13,7 @@ public class JpaUser {
     private UUID id;
     @Column(name = "sso_subject", nullable = false, unique = true)
     private String ssoSubject;
+    @Column private String username;
     @Column(nullable = false) private String email;
     @Column(name = "display_name", nullable = false) private String displayName;
     @Column(name = "avatar_url") private String avatarUrl;

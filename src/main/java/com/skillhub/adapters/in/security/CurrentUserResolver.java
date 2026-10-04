@@ -23,9 +23,11 @@ public class CurrentUserResolver {
         if (auth.getPrincipal() instanceof Jwt jwt) {
             String subject = jwt.getSubject();
             String username = jwt.getClaimAsString("preferred_username");
+            String name = jwt.getClaimAsString("name");
             String email = jwt.getClaimAsString("email");
             return userSyncService.syncFromSso(subject, email != null ? email : subject,
-                username != null ? username : subject);
+                username != null ? username : subject,
+                name != null ? name : (username != null ? username : subject));
         }
         return null;
     }

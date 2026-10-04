@@ -24,7 +24,7 @@ class TokenApiIT {
 
     @BeforeEach
     void setUp() {
-        var user = users.syncFromSso("token-user", "tok@skillhub.io", "Token User");
+        var user = users.syncFromSso("token-user", "tok@skillhub.io", "token-user", "Token User");
         authHeader = "Bearer " + tokens.createToken(user, "setup").rawToken();
     }
 

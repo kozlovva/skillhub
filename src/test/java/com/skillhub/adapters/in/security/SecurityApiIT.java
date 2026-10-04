@@ -22,7 +22,7 @@ class SecurityApiIT {
 
     @BeforeEach
     void setUp() {
-        var user = users.syncFromSso("sec-user", "sec@skillhub.io", "Sec User");
+        var user = users.syncFromSso("sec-user", "sec@skillhub.io", "sec-user", "Sec User");
         authHeader = "Bearer " + tokens.createToken(user, "sec").rawToken();
     }
 

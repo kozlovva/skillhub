@@ -64,7 +64,7 @@ class VersionPublishIT {
     @BeforeEach
     void setUp() {
         storage.ensureBucket();
-        var user = users.syncFromSso("pub-user", "pub@skillhub.io", "Publisher");
+        var user = users.syncFromSso("pub-user", "pub@skillhub.io", "pub-user", "Publisher");
         authHeader = "Bearer " + tokens.createToken(user, "pub").rawToken();
 
         jdbc.update("""

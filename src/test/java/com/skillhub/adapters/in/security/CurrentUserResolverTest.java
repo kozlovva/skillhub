@@ -23,28 +23,45 @@ class CurrentUserResolverTest {
         when(auth.isAuthenticated()).thenReturn(true);
         when(auth.getPrincipal()).thenReturn(jwt);
         User synced = User.builder().ssoSubject("sub-1")
-            .email("real@skillhub.io").displayName("vlad").build();
-        when(sync.syncFromSso("sub-1", "real@skillhub.io", "vlad")).thenReturn(synced);
+            .email("real@skillhub.io").username("vlad").displayName("vlad").build();
+        when(sync.syncFromSso("sub-1", "real@skillhub.io", "vlad", "vlad")).thenReturn(synced);
 
         User result = new CurrentUserResolver(sync).resolve(auth);
 
         assertThat(result).isSameAs(synced);
-        verify(sync).syncFromSso("sub-1", "real@skillhub.io", "vlad");
+        verify(sync).syncFromSso("sub-1", "real@skillhub.io", "vlad", "vlad");
     }
 
     @Test
-    void fallsBackToSubjectWhenEmailClaimMissing() {
+    void fallsBackToSubjectWhenClaimsMissing() {
         UserSyncService sync = mock(UserSyncService.class);
         Jwt jwt = Jwt.withTokenValue("t").header("alg", "none").subject("sub-2").build();
         Authentication auth = mock(Authentication.class);
         when(auth.isAuthenticated()).thenReturn(true);
         when(auth.getPrincipal()).thenReturn(jwt);
-        when(sync.syncFromSso("sub-2", "sub-2", "sub-2"))
+        when(sync.syncFromSso("sub-2", "sub-2", "sub-2", "sub-2"))
             .thenReturn(User.builder().build());
 
         new CurrentUserResolver(sync).resolve(auth);
 
-        verify(sync).syncFromSso("sub-2", "sub-2", "sub-2");
+        verify(sync).syncFromSso("sub-2", "sub-2", "sub-2", "sub-2");
+    }
+
+    @Test
+    void usesNameClaimForDisplayNameWhenPresent() {
+        UserSyncService sync = mock(UserSyncService.class);
+        Jwt jwt = Jwt.withTokenValue("t").header("alg", "none").subject("sub-2")
+            .claim("preferred_username", "vpetrov").claim("name", "Владимир Петров")
+            .build();
+        Authentication auth = mock(Authentication.class);
+        when(auth.isAuthenticated()).thenReturn(true);
+        when(auth.getPrincipal()).thenReturn(jwt);
+        when(sync.syncFromSso("sub-2", "sub-2", "vpetrov", "Владимир Петров"))
+            .thenReturn(User.builder().build());
+
+        new CurrentUserResolver(sync).resolve(auth);
+
+        verify(sync).syncFromSso("sub-2", "sub-2", "vpetrov", "Владимир Петров");
     }
 
     @Test

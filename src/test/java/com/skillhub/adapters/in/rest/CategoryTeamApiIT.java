@@ -28,12 +28,12 @@ class CategoryTeamApiIT {
 
     @BeforeEach
     void setUp() {
-        var admin = users.syncFromSso(adminSubject, "admin@skillhub.io", "Admin");
+        var admin = users.syncFromSso(adminSubject, "admin@skillhub.io", "cat-admin", "Admin");
         admin.setAdmin(true);
         userRepo.save(admin);
         adminHeader = "Bearer " + tokens.createToken(admin, "admin").rawToken();
 
-        var member = users.syncFromSso("cat-member", "member@skillhub.io", "Member");
+        var member = users.syncFromSso("cat-member", "member@skillhub.io", "cat-member", "Member");
         memberHeader = "Bearer " + tokens.createToken(member, "member").rawToken();
     }
 

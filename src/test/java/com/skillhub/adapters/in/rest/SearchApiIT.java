@@ -25,7 +25,7 @@ class SearchApiIT {
 
     @BeforeEach
     void setUp() {
-        var user = users.syncFromSso("search-api-user", "search-api@skillhub.io", "Search Api");
+        var user = users.syncFromSso("search-api-user", "search-api@skillhub.io", "search-api-user", "Search Api");
         authHeader = "Bearer " + tokens.createToken(user, "search-api").rawToken();
     }
 

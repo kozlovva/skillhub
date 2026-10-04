@@ -8,7 +8,8 @@ public final class UserJpaMapper {
 
     public static User toDomain(JpaUser e) {
         return User.builder()
-            .id(e.getId()).ssoSubject(e.getSsoSubject()).email(e.getEmail())
+            .id(e.getId()).ssoSubject(e.getSsoSubject()).username(e.getUsername())
+            .email(e.getEmail())
             .displayName(e.getDisplayName()).avatarUrl(e.getAvatarUrl())
             .admin(e.isAdmin()).createdAt(e.getCreatedAt())
             .build();
@@ -16,7 +17,8 @@ public final class UserJpaMapper {
 
     public static JpaUser toEntity(User d) {
         return JpaUser.builder()
-            .id(d.getId()).ssoSubject(d.getSsoSubject()).email(d.getEmail())
+            .id(d.getId()).ssoSubject(d.getSsoSubject()).username(d.getUsername())
+            .email(d.getEmail())
             .displayName(d.getDisplayName()).avatarUrl(d.getAvatarUrl())
             .admin(d.isAdmin()).createdAt(d.getCreatedAt())
             .build();
