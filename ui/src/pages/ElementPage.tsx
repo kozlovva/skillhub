@@ -114,6 +114,17 @@ export default function ElementPage() {
       })}>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="h4" component="h1">{element.name}</Typography>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: 'monospace', color: 'text.secondary', cursor: 'pointer' }}
+            onClick={() => {
+              navigator.clipboard?.writeText(element.slug);
+              showSuccess(`Slug скопирован: ${element.slug}`);
+            }}
+            title="Нажмите, чтобы скопировать slug"
+          >
+            {element.slug}
+          </Typography>
           <Chip label={element.type} color="primary" variant="outlined" size="small" />
           {categoryName && <Chip label={categoryName} variant="outlined" size="small" />}
           <FavoriteButton
