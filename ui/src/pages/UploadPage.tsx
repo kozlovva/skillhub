@@ -36,12 +36,15 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [type, setType] = useState<ElementType | ''>('');
+  const [typeTouched, setTypeTouched] = useState(false);
   const [team, setTeam] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionTouched, setDescriptionTouched] = useState(false);
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'TEAM' | ''>('');
@@ -97,12 +100,12 @@ export default function UploadPage() {
   const applyArchive = (parsed: ArchiveParseResult) => {
     setArchive(parsed);
     if (!parsed.ok) return;
-    setName(parsed.manifest.name);
-    setSlug(slugify(parsed.manifest.name));
-    if ((ELEMENT_TYPES as string[]).includes(parsed.manifest.type)) {
+    if (!nameTouched) setName(parsed.manifest.name);
+    if (!slugTouched) setSlug(slugify(parsed.manifest.name));
+    if (!typeTouched && (ELEMENT_TYPES as string[]).includes(parsed.manifest.type)) {
       setType(parsed.manifest.type as ElementType);
     }
-    setDescription(parsed.manifest.description);
+    if (!descriptionTouched) setDescription(parsed.manifest.description);
   };
 
   const selectFile = (next: File) => {
@@ -237,6 +240,7 @@ export default function UploadPage() {
               value={name}
               required
               onChange={(e) => {
+                setNameTouched(true);
                 setName(e.target.value);
                 if (!slugTouched) setSlug(slugify(e.target.value));
               }}
@@ -262,7 +266,10 @@ export default function UploadPage() {
                 label="Тип"
                 value={type}
                 required
-                onChange={(e) => setType(e.target.value as ElementType)}
+                onChange={(e) => {
+                  setTypeTouched(true);
+                  setType(e.target.value as ElementType);
+                }}
               >
                 {ELEMENT_TYPES.map((t) => (
                   <MenuItem key={t} value={t}>{t}</MenuItem>
@@ -312,7 +319,10 @@ export default function UploadPage() {
               value={description}
               multiline
               minRows={3}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescriptionTouched(true);
+                setDescription(e.target.value);
+              }}
             />
             <Autocomplete
               multiple

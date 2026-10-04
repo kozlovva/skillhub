@@ -278,3 +278,23 @@ test('selecting a team enables TEAM visibility', async () => {
   expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
     .not.toHaveAttribute('aria-disabled', 'true');
 });
+
+test('replacing the file overwrites only untouched fields', async () => {
+  renderPage();
+  await passStep1(makeZip(VALID_MANIFEST));
+  const nameField = screen.getByLabelText(/^Название/);
+  await userEvent.clear(nameField);
+  await userEvent.type(nameField, 'Ручное имя');
+  await userEvent.click(screen.getByRole('button', { name: 'Назад' }));
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    makeZip({ name: 'Other', version: '2.0.0', description: 'Другое', type: 'SCRIPT' })
+  );
+  await screen.findByTestId('archive-summary');
+  await userEvent.click(screen.getByRole('button', { name: 'Далее' }));
+
+  expect(screen.getByLabelText(/^Название/)).toHaveValue('Ручное имя');
+  expect(screen.getByLabelText(/^Тип/)).toHaveTextContent('SCRIPT');
+  expect(screen.getByLabelText(/Описание/)).toHaveValue('Другое');
+  expect(screen.getByLabelText(/^Slug/)).toHaveValue('other');
+});
