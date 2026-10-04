@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,5 +41,13 @@ public class JpaFavoriteRepositoryAdapter implements FavoriteRepositoryPort {
     public Optional<Favorite> findByUserIdAndElementId(UUID userId, UUID elementId) {
         return jpa.findByUserIdAndElementId(userId, elementId)
             .map(f -> new Favorite(f.getUserId(), f.getElementId(), f.getCreatedAt()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Favorite> findAllByUserId(UUID userId) {
+        return jpa.findByUserIdOrderByCreatedAtDesc(userId).stream()
+            .map(f -> new Favorite(f.getUserId(), f.getElementId(), f.getCreatedAt()))
+            .toList();
     }
 }

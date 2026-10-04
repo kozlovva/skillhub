@@ -31,6 +31,12 @@ public class JpaElementRepositoryAdapter implements ElementRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Element> findById(java.util.UUID id) {
+        return jpa.findById(id).map(ElementJpaMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean existsBySlug(String slug) {
         return jpa.existsBySlug(slug);
     }

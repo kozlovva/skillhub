@@ -3,13 +3,16 @@ package com.skillhub.application.service;
 import com.skillhub.core.exception.UnprocessableException;
 import com.skillhub.domain.model.*;
 import com.skillhub.domain.port.ClockPort;
+import com.skillhub.domain.port.ElementRepositoryPort;
 import com.skillhub.domain.port.FavoriteRepositoryPort;
 import com.skillhub.domain.port.RatingRepositoryPort;
 import com.skillhub.domain.port.ReviewRepositoryPort;
+import com.skillhub.domain.service.AccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SocialUseCase {
@@ -21,15 +24,19 @@ public class SocialUseCase {
     private final ReviewRepositoryPort reviews;
     private final FavoriteRepositoryPort favorites;
     private final ClockPort clock;
+    private final ElementRepositoryPort elements;
+    private final AccessService access;
 
     public SocialUseCase(ElementUseCase elementUseCase, RatingRepositoryPort ratings,
                          ReviewRepositoryPort reviews, FavoriteRepositoryPort favorites,
-                         ClockPort clock) {
+                         ClockPort clock, ElementRepositoryPort elements, AccessService access) {
         this.elementUseCase = elementUseCase;
         this.ratings = ratings;
         this.reviews = reviews;
         this.favorites = favorites;
         this.clock = clock;
+        this.elements = elements;
+        this.access = access;
     }
 
     @Transactional
@@ -79,6 +86,15 @@ public class SocialUseCase {
         boolean favorited = viewer != null
             && favorites.findByUserIdAndElementId(viewer.getId(), element.getId()).isPresent();
         return new SocialInfo(avg, count, favorited);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Element> favorites(User viewer) {
+        return favorites.findAllByUserId(viewer.getId()).stream()
+            .map(f -> elements.findById(f.elementId()))
+            .flatMap(Optional::stream)
+            .filter(e -> access.canRead(e, viewer))
+            .toList();
     }
 
     private void validateRating(int rating) {

@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface ElementRepositoryPort {
     Element save(Element element);
     Optional<Element> findBySlug(String slug);
+    Optional<Element> findById(UUID id);
     boolean existsBySlug(String slug);
     List<Element> findAll();
     void incrementDownloads(UUID elementId);

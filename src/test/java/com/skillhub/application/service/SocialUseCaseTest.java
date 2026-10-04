@@ -3,10 +3,12 @@ package com.skillhub.application.service;
 import com.skillhub.core.exception.UnprocessableException;
 import com.skillhub.domain.model.*;
 import com.skillhub.domain.port.*;
+import com.skillhub.domain.service.AccessService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,10 +25,19 @@ class SocialUseCaseTest {
     ReviewRepositoryPort reviews;
     FavoriteRepositoryPort favorites;
     ClockPort clock;
+    ElementRepositoryPort elements;
+    TeamMembershipPort membership;
+    AccessService access;
     SocialUseCase useCase;
 
     User user = User.builder().id(UUID.randomUUID()).ssoSubject("s").email("e")
         .displayName("U").admin(false).createdAt(Instant.now()).build();
+    User owner = User.builder().id(UUID.randomUUID()).ssoSubject("o").email("o")
+        .displayName("O").admin(false).createdAt(Instant.now()).build();
+    User viewer = User.builder().id(UUID.randomUUID()).ssoSubject("v").email("v")
+        .displayName("V").admin(false).createdAt(Instant.now()).build();
+    Team team = Team.builder().id(UUID.randomUUID()).slug("t").name("T")
+        .createdAt(Instant.now()).build();
     Element element = Element.builder().id(UUID.randomUUID()).slug("el")
         .type(ElementType.SKILL).name("el").description("")
         .team(Team.builder().id(UUID.randomUUID()).slug("t").name("T")
@@ -41,12 +52,16 @@ class SocialUseCaseTest {
         reviews = mock(ReviewRepositoryPort.class);
         favorites = mock(FavoriteRepositoryPort.class);
         clock = mock(ClockPort.class);
+        elements = mock(ElementRepositoryPort.class);
+        membership = mock(TeamMembershipPort.class);
+        access = new AccessService(membership);
         when(clock.now()).thenReturn(Instant.parse("2026-01-01T00:00:00Z"));
         when(elementUseCase.getBySlug("el", user)).thenReturn(element);
         when(ratings.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ratings.avgRating(element.getId())).thenReturn(4.0);
         when(ratings.countByElementId(element.getId())).thenReturn(1L);
-        useCase = new SocialUseCase(elementUseCase, ratings, reviews, favorites, clock);
+        useCase = new SocialUseCase(elementUseCase, ratings, reviews, favorites, clock,
+            elements, access);
     }
 
     @Test
@@ -96,5 +111,25 @@ class SocialUseCaseTest {
         assertThat(info.avgRating()).isEqualTo(4.0);
         assertThat(info.ratingCount()).isEqualTo(1L);
         assertThat(info.favorited()).isFalse();
+    }
+
+    @Test
+    void favoritesReturnOnlyVisibleElements() {
+        Element pub = Element.builder().id(UUID.randomUUID()).slug("pub")
+            .type(ElementType.SKILL).name("pub").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        Element hidden = Element.builder().id(UUID.randomUUID()).slug("hidden")
+            .type(ElementType.SKILL).name("hidden").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.TEAM).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(favorites.findAllByUserId(viewer.getId())).thenReturn(List.of(
+            new Favorite(viewer.getId(), hidden.getId(), Instant.now()),
+            new Favorite(viewer.getId(), pub.getId(), Instant.now())));
+        when(elements.findById(pub.getId())).thenReturn(Optional.of(pub));
+        when(elements.findById(hidden.getId())).thenReturn(Optional.of(hidden));
+        when(membership.roleOf(any(), any())).thenReturn(Optional.empty());
+        List<Element> result = useCase.favorites(viewer);
+        assertThat(result).extracting(Element::getSlug).containsExactly("pub");
     }
 }
