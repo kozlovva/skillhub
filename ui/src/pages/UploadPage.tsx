@@ -34,17 +34,18 @@ export default function UploadPage() {
   const [archive, setArchive] = useState<ArchiveParseResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<File | null>(null);
 
   const [name, setName] = useState('');
-  const [nameTouched, setNameTouched] = useState(false);
+  const nameTouchedRef = useRef(false);
   const [slug, setSlug] = useState('');
-  const [slugTouched, setSlugTouched] = useState(false);
+  const slugTouchedRef = useRef(false);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [type, setType] = useState<ElementType | ''>('');
-  const [typeTouched, setTypeTouched] = useState(false);
+  const typeTouchedRef = useRef(false);
   const [team, setTeam] = useState('');
   const [description, setDescription] = useState('');
-  const [descriptionTouched, setDescriptionTouched] = useState(false);
+  const descriptionTouchedRef = useRef(false);
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'TEAM' | ''>('');
@@ -100,18 +101,25 @@ export default function UploadPage() {
   const applyArchive = (parsed: ArchiveParseResult) => {
     setArchive(parsed);
     if (!parsed.ok) return;
-    if (!nameTouched) setName(parsed.manifest.name);
-    if (!slugTouched) setSlug(slugify(parsed.manifest.name));
-    if (!typeTouched && (ELEMENT_TYPES as string[]).includes(parsed.manifest.type)) {
+    if (!nameTouchedRef.current) setName(parsed.manifest.name);
+    if (!slugTouchedRef.current) setSlug(slugify(parsed.manifest.name));
+    if (
+      !typeTouchedRef.current
+      && (ELEMENT_TYPES as string[]).includes(parsed.manifest.type)
+    ) {
       setType(parsed.manifest.type as ElementType);
     }
-    if (!descriptionTouched) setDescription(parsed.manifest.description);
+    if (!descriptionTouchedRef.current) setDescription(parsed.manifest.description);
   };
 
   const selectFile = (next: File) => {
     setFile(next);
     setArchive(null);
-    inspectArchive(next).then(applyArchive);
+    fileRef.current = next;
+    inspectArchive(next).then((parsed) => {
+      if (fileRef.current !== next) return;
+      applyArchive(parsed);
+    });
   };
 
   const canProceed = archive?.ok === true;
@@ -240,9 +248,9 @@ export default function UploadPage() {
               value={name}
               required
               onChange={(e) => {
-                setNameTouched(true);
+                nameTouchedRef.current = true;
                 setName(e.target.value);
-                if (!slugTouched) setSlug(slugify(e.target.value));
+                if (!slugTouchedRef.current) setSlug(slugify(e.target.value));
               }}
             />
             <TextField
@@ -250,7 +258,7 @@ export default function UploadPage() {
               value={slug}
               required
               onChange={(e) => {
-                setSlugTouched(true);
+                slugTouchedRef.current = true;
                 setSlug(e.target.value);
                 setSlugError(null);
               }}
@@ -267,7 +275,7 @@ export default function UploadPage() {
                 value={type}
                 required
                 onChange={(e) => {
-                  setTypeTouched(true);
+                  typeTouchedRef.current = true;
                   setType(e.target.value as ElementType);
                 }}
               >
@@ -320,7 +328,7 @@ export default function UploadPage() {
               multiline
               minRows={3}
               onChange={(e) => {
-                setDescriptionTouched(true);
+                descriptionTouchedRef.current = true;
                 setDescription(e.target.value);
               }}
             />

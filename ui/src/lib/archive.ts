@@ -1,6 +1,9 @@
 import { unzipSync, strFromU8 } from 'fflate';
 
 export const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
+export const MAX_ARCHIVE_BYTES = 50 * 1024 * 1024;
+export const MAX_ENTRY_BYTES = 200 * 1024 * 1024;
+export const MAX_FILES = 5000;
 
 export interface ArchiveEntry {
   path: string;
@@ -19,6 +22,9 @@ export type ArchiveParseResult =
   | { ok: false; error: string };
 
 export async function inspectArchive(file: File): Promise<ArchiveParseResult> {
+  if (file.size > MAX_ARCHIVE_BYTES) {
+    return { ok: false, error: 'Архив больше 50 МБ' };
+  }
   let data: Uint8Array;
   try {
     data = new Uint8Array(await file.arrayBuffer());
@@ -26,16 +32,27 @@ export async function inspectArchive(file: File): Promise<ArchiveParseResult> {
     return { ok: false, error: 'Не удалось прочитать файл' };
   }
   const entries: ArchiveEntry[] = [];
+  let entryTooBig = false;
   let contents: Record<string, Uint8Array>;
   try {
     contents = unzipSync(data, {
       filter: (f) => {
+        if (f.originalSize > MAX_ENTRY_BYTES) {
+          entryTooBig = true;
+          return false;
+        }
         if (!f.name.endsWith('/')) entries.push({ path: f.name, size: f.originalSize });
         return f.name === 'manifest.json';
       },
     });
   } catch {
     return { ok: false, error: 'Файл не является корректным ZIP-архивом' };
+  }
+  if (entryTooBig) {
+    return { ok: false, error: 'Распакованное содержимое архива превышает 200 МБ' };
+  }
+  if (entries.length > MAX_FILES) {
+    return { ok: false, error: 'В архиве больше 5000 файлов' };
   }
   const raw = contents['manifest.json'];
   if (!raw) return { ok: false, error: 'В корне архива нет manifest.json' };

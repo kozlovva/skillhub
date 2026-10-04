@@ -279,6 +279,25 @@ test('selecting a team enables TEAM visibility', async () => {
     .not.toHaveAttribute('aria-disabled', 'true');
 });
 
+test('rapidly replacing the file applies only the last selected archive', async () => {
+  renderPage();
+  await screen.findByText('Требования к архиву');
+  const input = screen.getByTestId('version-file');
+  await userEvent.upload(
+    input,
+    makeZip({ name: 'Alpha', version: '1.0.0', description: '', type: 'SKILL' })
+  );
+  fireEvent.change(input, {
+    target: {
+      files: [makeZip({ name: 'Beta', version: '2.0.0', description: '', type: 'SKILL' })],
+    },
+  });
+  const summary = await screen.findByTestId('archive-summary');
+  await waitFor(() => expect(summary).toHaveTextContent('Beta'));
+  expect(summary).toHaveTextContent('2.0.0');
+  expect(screen.queryByText('Alpha')).toBeNull();
+});
+
 test('replacing the file overwrites only untouched fields', async () => {
   renderPage();
   await passStep1(makeZip(VALID_MANIFEST));

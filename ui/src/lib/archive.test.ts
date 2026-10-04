@@ -1,5 +1,5 @@
 import { zipSync, strToU8 } from 'fflate';
-import { inspectArchive, SEMVER_PATTERN } from './archive';
+import { inspectArchive, SEMVER_PATTERN, MAX_ARCHIVE_BYTES, MAX_FILES } from './archive';
 
 const VALID = { name: 'pdf-skill', version: '1.2.3', description: 'Desc', type: 'SKILL' };
 
@@ -68,6 +68,23 @@ test('rejects non-semver version', async () => {
 test('rejects file that is not a zip', async () => {
   const res = await inspectArchive(new File(['hello'], 'x.zip', { type: 'application/zip' }));
   expect(res).toEqual({ ok: false, error: 'Файл не является корректным ZIP-архивом' });
+});
+
+test('rejects archive larger than 50 MB', async () => {
+  const file = new File(
+    [new Uint8Array(MAX_ARCHIVE_BYTES + 1)],
+    'big.zip',
+    { type: 'application/zip' }
+  );
+  const res = await inspectArchive(file);
+  expect(res).toEqual({ ok: false, error: 'Архив больше 50 МБ' });
+});
+
+test('rejects archive with more than 5000 files', async () => {
+  const files: Record<string, Uint8Array> = { 'manifest.json': strToU8(JSON.stringify(VALID)) };
+  for (let i = 0; i <= MAX_FILES; i += 1) files[`f/${i}.txt`] = strToU8('x');
+  const res = await inspectArchive(new File([zipSync(files)], 'many.zip', { type: 'application/zip' }));
+  expect(res).toEqual({ ok: false, error: 'В архиве больше 5000 файлов' });
 });
 
 test('semver pattern matches server rule', () => {
