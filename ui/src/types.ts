@@ -83,3 +83,10 @@ export interface MemberCandidate {
   displayName: string;
 }
 
+export interface TeamMemberResponse {
+  userId: string;
+  username: string;
+  displayName: string;
+  role: 'OWNER' | 'MAINTAINER' | 'MEMBER';
+}
+

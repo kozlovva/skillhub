@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { TeamResponse, MemberCandidate } from '../types';
+import type { TeamResponse, MemberCandidate, TeamMemberResponse } from '../types';
 
 export const teams = {
   async list(): Promise<TeamResponse[]> {
@@ -13,5 +13,14 @@ export const teams = {
   },
   async addMember(slug: string, userId: string, role: string): Promise<void> {
     await api.post(`/api/teams/${slug}/members`, { userId, role });
+  },
+  async members(slug: string): Promise<TeamMemberResponse[]> {
+    return (await api.get<TeamMemberResponse[]>(`/api/teams/${slug}/members`)).data;
+  },
+  async changeRole(slug: string, userId: string, role: string): Promise<void> {
+    await api.patch(`/api/teams/${slug}/members/${userId}`, { role });
+  },
+  async removeMember(slug: string, userId: string): Promise<void> {
+    await api.delete(`/api/teams/${slug}/members/${userId}`);
   },
 };
