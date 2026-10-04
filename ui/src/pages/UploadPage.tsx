@@ -125,13 +125,12 @@ export default function UploadPage() {
             (slugInvalid ? 'Только строчные латинские буквы, цифры и дефисы' : undefined)
           }
         />
-        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
           <TextField
             select
             label="Тип"
             value={type}
             required
-            sx={{ minWidth: 160 }}
             onChange={(e) => setType(e.target.value as ElementType)}
           >
             {ELEMENT_TYPES.map((t) => (
@@ -140,9 +139,21 @@ export default function UploadPage() {
           </TextField>
           <TextField
             select
+            label="Категория"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <MenuItem value="">—</MenuItem>
+            {(categories ?? []).map((c) => (
+              <MenuItem key={c.slug} value={c.slug}>{c.name}</MenuItem>
+            ))}
+          </TextField>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+          <TextField
+            select
             label="Команда"
             value={team}
-            sx={{ minWidth: 200 }}
             onChange={(e) => {
               const next = e.target.value;
               setTeam(next);
@@ -159,25 +170,12 @@ export default function UploadPage() {
             label="Видимость"
             value={visibility}
             required={!!team}
-            sx={{ minWidth: 220 }}
             onChange={(e) => setVisibility(e.target.value as 'PUBLIC' | 'TEAM')}
           >
             <MenuItem value="PUBLIC">PUBLIC — доступен всем</MenuItem>
             <MenuItem value="TEAM" disabled={!team}>TEAM — только команде</MenuItem>
           </TextField>
-        </Stack>
-        <TextField
-          select
-          label="Категория"
-          value={category}
-          sx={{ maxWidth: 240 }}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <MenuItem value="">—</MenuItem>
-          {(categories ?? []).map((c) => (
-            <MenuItem key={c.slug} value={c.slug}>{c.name}</MenuItem>
-          ))}
-        </TextField>
+        </Box>
         <TextField
           label="Описание"
           value={description}
