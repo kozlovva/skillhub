@@ -65,24 +65,57 @@ class CategoryTeamApiIT {
     }
 
     @Test
-    void createTeamCreatorBecomesOwner() {
+    void adminCreatesTeamNonAdminForbidden() {
         ResponseEntity<String> created = rest.exchange("/api/teams", HttpMethod.POST,
             new HttpEntity<>(Map.of("slug", "design-team", "name", "Design"),
-                headers(memberHeader)), String.class);
+                headers(adminHeader)), String.class);
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(created.getBody()).contains("design-team");
+
+        ResponseEntity<String> forbidden = rest.exchange("/api/teams", HttpMethod.POST,
+            new HttpEntity<>(Map.of("slug", "other-team", "name", "Other"),
+                headers(memberHeader)), String.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
     void ownerAddsMember() {
         rest.exchange("/api/teams", HttpMethod.POST,
             new HttpEntity<>(Map.of("slug", "ux-team", "name", "UX"),
-                headers(memberHeader)), String.class);
+                headers(adminHeader)), String.class);
+
+        ResponseEntity<String> promote = rest.exchange("/api/teams/ux-team/members",
+            HttpMethod.POST,
+            new HttpEntity<>(Map.of("ssoSubject", "cat-member", "role", "OWNER"),
+                headers(adminHeader)), String.class);
+        assertThat(promote.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<String> added = rest.exchange("/api/teams/ux-team/members",
             HttpMethod.POST,
             new HttpEntity<>(Map.of("ssoSubject", adminSubject, "role", "MEMBER"),
                 headers(memberHeader)), String.class);
         assertThat(added.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void meReturnsAdminFlagAndTeamRoles() {
+        rest.exchange("/api/teams", HttpMethod.POST,
+            new HttpEntity<>(Map.of("slug", "me-team", "name", "Me"),
+                headers(adminHeader)), String.class);
+        rest.exchange("/api/teams/me-team/members", HttpMethod.POST,
+            new HttpEntity<>(Map.of("ssoSubject", "cat-member", "role", "MAINTAINER"),
+                headers(adminHeader)), String.class);
+
+        ResponseEntity<String> adminMe = rest.exchange("/api/me", HttpMethod.GET,
+            new HttpEntity<>(headers(adminHeader)), String.class);
+        assertThat(adminMe.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(adminMe.getBody()).contains("\"admin\":true");
+
+        ResponseEntity<String> memberMe = rest.exchange("/api/me", HttpMethod.GET,
+            new HttpEntity<>(headers(memberHeader)), String.class);
+        assertThat(memberMe.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(memberMe.getBody()).contains("\"admin\":false");
+        assertThat(memberMe.getBody()).contains("me-team");
+        assertThat(memberMe.getBody()).contains("MAINTAINER");
     }
 }

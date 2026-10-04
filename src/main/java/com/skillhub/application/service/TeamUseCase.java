@@ -31,6 +31,9 @@ public class TeamUseCase {
 
     @Transactional
     public Team create(String slug, String name, User creator) {
+        if (!creator.isAdmin()) {
+            throw new ForbiddenException("Only admin can create teams");
+        }
         if (teams.findBySlug(slug).isPresent()) {
             throw new ConflictException("Team already exists: " + slug);
         }

@@ -11,6 +11,8 @@ export interface ElementResponse {
   visibility: 'PUBLIC' | 'TEAM';
   latestVersion: string | null;
   downloadsCount: number;
+  avgRating?: number | null;
+  ratingCount?: number | null;
 }
 
 export interface FileDto {

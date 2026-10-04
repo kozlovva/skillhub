@@ -39,7 +39,7 @@ test('lists tokens and creates new one showing raw token once', async () => {
   renderPage();
   expect(await screen.findByText('cli')).toBeInTheDocument();
 
-  await userEvent.type(screen.getByPlaceholderText('Имя токена'), 'new-cli');
+  await userEvent.type(screen.getByLabelText('Имя токена'), 'new-cli');
   await userEvent.click(screen.getByRole('button', { name: 'Создать токен' }));
 
   await waitFor(() => expect(postMock).toHaveBeenCalled());

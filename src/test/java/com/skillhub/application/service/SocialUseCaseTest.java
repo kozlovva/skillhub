@@ -67,6 +67,7 @@ class SocialUseCaseTest {
             .thenReturn(Optional.empty());
         useCase.review("el", user, 4, "good");
         org.mockito.Mockito.verify(reviews).save(any(Review.class));
+        org.mockito.Mockito.verify(ratings).save(new Rating(element.getId(), user.getId(), 4));
 
         Review existing = Review.builder().id(UUID.randomUUID())
             .element(element).user(user).rating(3).text("old")
@@ -76,6 +77,7 @@ class SocialUseCaseTest {
         useCase.review("el", user, 5, "updated");
         assertThat(existing.getRating()).isEqualTo(5);
         assertThat(existing.getText()).isEqualTo("updated");
+        org.mockito.Mockito.verify(ratings).save(new Rating(element.getId(), user.getId(), 5));
     }
 
     @Test

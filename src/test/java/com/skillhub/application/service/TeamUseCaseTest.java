@@ -27,7 +27,10 @@ class TeamUseCaseTest {
     TeamUseCase useCase;
 
     User creator = User.builder().id(UUID.randomUUID()).ssoSubject("s").email("e")
-        .displayName("Creator").admin(false).createdAt(Instant.now()).build();
+        .displayName("Creator").admin(true).createdAt(Instant.now()).build();
+
+    User plainUser = User.builder().id(UUID.randomUUID()).ssoSubject("plain").email("p")
+        .displayName("Plain").admin(false).createdAt(Instant.now()).build();
 
     @BeforeEach
     void setUp() {
@@ -53,6 +56,12 @@ class TeamUseCaseTest {
     }
 
     @Test
+    void onlyAdminCreatesTeam() {
+        assertThatThrownBy(() -> useCase.create("design", "Design", plainUser))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
     void duplicateTeamConflicts() {
         when(teams.findBySlug("design")).thenReturn(Optional.of(Team.builder().build()));
         assertThatThrownBy(() -> useCase.create("design", "Design", creator))
@@ -66,15 +75,15 @@ class TeamUseCaseTest {
         User newMember = User.builder().id(UUID.randomUUID()).ssoSubject("m")
             .email("m").displayName("M").admin(false).createdAt(Instant.now()).build();
         when(users.findBySsoSubject("m")).thenReturn(Optional.of(newMember));
-        when(membership.roleOf(team.getId(), creator.getId()))
+        when(membership.roleOf(team.getId(), plainUser.getId()))
             .thenReturn(Optional.of(TeamRole.MEMBER));
 
-        assertThatThrownBy(() -> useCase.addMember("ux", "m", "MEMBER", creator))
+        assertThatThrownBy(() -> useCase.addMember("ux", "m", "MEMBER", plainUser))
             .isInstanceOf(ForbiddenException.class);
 
-        when(membership.roleOf(team.getId(), creator.getId()))
+        when(membership.roleOf(team.getId(), plainUser.getId()))
             .thenReturn(Optional.of(TeamRole.OWNER));
-        TeamMembership added = useCase.addMember("ux", "m", "MEMBER", creator);
+        TeamMembership added = useCase.addMember("ux", "m", "MEMBER", plainUser);
         assertThat(added.role()).isEqualTo(TeamRole.MEMBER);
     }
 
@@ -82,10 +91,10 @@ class TeamUseCaseTest {
     void unknownUserIsNotFound() {
         Team team = useCase.create("ux", "UX", creator);
         when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
-        when(membership.roleOf(team.getId(), creator.getId()))
+        when(membership.roleOf(team.getId(), plainUser.getId()))
             .thenReturn(Optional.of(TeamRole.OWNER));
         when(users.findBySsoSubject("ghost")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> useCase.addMember("ux", "ghost", "MEMBER", creator))
+        assertThatThrownBy(() -> useCase.addMember("ux", "ghost", "MEMBER", plainUser))
             .isInstanceOf(NotFoundException.class);
     }
 }

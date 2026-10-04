@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody,
-  Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Stack, Box,
 } from '@mui/material';
+import KeyIcon from '@mui/icons-material/Key';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { api, toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 
@@ -40,8 +42,11 @@ export default function TokensPage() {
   });
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>API-токены</Typography>
+    <Paper sx={{ p: 3, }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+        <KeyIcon sx={{ color: 'primary.main' }} />
+        <Typography variant="h4" component="h1">API-токены</Typography>
+      </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Токены используются CLI и AI-агентами (заголовок Authorization: Bearer).
       </Typography>
@@ -56,46 +61,71 @@ export default function TokensPage() {
         <TableBody>
           {(tokens ?? []).map((t) => (
             <TableRow key={t.name}>
-              <TableCell>{t.name}</TableCell>
+              <TableCell sx={{ fontWeight: 500 }}>{t.name}</TableCell>
               <TableCell>{new Date(t.createdAt).toLocaleString()}</TableCell>
               <TableCell>{t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleString() : '—'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <TextField
-        size="small"
-        placeholder="Имя токена"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        sx={{ mt: 2, mr: 1 }}
-      />
-      <Button
-        variant="contained"
-        sx={{ mt: 2 }}
-        onClick={() => createMutation.mutate()}
-        disabled={!name.trim()}
-      >
-        Создать токен
-      </Button>
-      <Dialog open={rawToken !== null} onClose={() => setRawToken(null)}>
+      <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap>
+        <TextField
+          label="Имя токена"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          sx={{ width: 220 }}
+        />
+        <Button
+          variant="contained"
+          onClick={() => createMutation.mutate()}
+          disabled={!name.trim()}
+        >
+          Создать токен
+        </Button>
+      </Stack>
+      <Dialog open={rawToken !== null} onClose={() => setRawToken(null)} fullWidth maxWidth="sm">
         <DialogTitle>Токен создан</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1 }}>
             Скопируйте токен сейчас — он больше не будет показан:
           </Typography>
-          <Typography
-            component="code"
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
             sx={{
-              display: 'block',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
               p: 1,
-              bgcolor: 'action.hover',
-              fontFamily: 'monospace',
-              wordBreak: 'break-all',
             }}
           >
-            {rawToken}
-          </Typography>
+            <Box
+              component="code"
+              sx={{
+                fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                fontSize: 13,
+                lineHeight: '20px',
+                px: 1,
+                wordBreak: 'break-all',
+                flexGrow: 1,
+                userSelect: 'all',
+              }}
+            >
+              {rawToken}
+            </Box>
+            <Button
+              size="small"
+              startIcon={<ContentCopyIcon />}
+              onClick={() => {
+                void navigator.clipboard?.writeText(rawToken ?? '');
+                showSuccess('Скопировано');
+              }}
+            >
+              Копировать
+            </Button>
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRawToken(null)}>Закрыть</Button>

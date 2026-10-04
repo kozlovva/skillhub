@@ -27,7 +27,7 @@ public class SearchController {
                                        Authentication auth) {
         var result = searchUseCase.search(q, type, category, currentUser.resolve(auth), limit, offset);
         List<ElementResponse> items = result.items().stream()
-            .map(ElementResponse::from)
+            .map(e -> ElementResponse.from(e, result.ratings().get(e.getId())))
             .toList();
         return new SearchResultResponse(items, result.total(), result.facetsByType());
     }

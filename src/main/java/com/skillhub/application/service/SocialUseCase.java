@@ -51,6 +51,7 @@ public class SocialUseCase {
             }, () -> reviews.save(Review.builder()
                 .element(element).user(user).rating(rating).text(text)
                 .createdAt(clock.now()).build()));
+        ratings.save(new Rating(element.getId(), user.getId(), rating));
     }
 
     @Transactional(readOnly = true)

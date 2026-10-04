@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, Button, Table, TableHead, TableRow,
-  TableCell, TableBody, Chip, Stack,
+  TableCell, TableBody, Chip, Stack, Box,
 } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import { packs } from '../api/packs';
 import { elements as elementsApi } from '../api/elements';
 import { downloadFile, toApiError } from '../api/client';
@@ -47,16 +49,23 @@ export default function PackPage() {
   if (!pack) return null;
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5">Пак:</Typography>
-        <Typography variant="h5">{pack.slug}</Typography>
-      </Stack>
-      {authenticated && (
-        <Button variant="contained" sx={{ mb: 2 }} onClick={() => setDialogOpen(true)}>
-          Добавить элемент
+    <Paper sx={{ p: 3, }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" component="h1">
+            Пак: <Typography variant="inherit" component="span">{pack.slug}</Typography>
+          </Typography>
+          <Typography color="text.secondary">{pack.contents.length} элементов</Typography>
+        </Box>
+        {authenticated && (
+          <Button variant="contained" startIcon={<LibraryAddIcon />} onClick={() => setDialogOpen(true)}>
+            Добавить элемент
+          </Button>
+        )}
+        <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => { void handleDownload(); }}>
+          Скачать пак
         </Button>
-      )}
+      </Stack>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -68,7 +77,14 @@ export default function PackPage() {
         <TableBody>
           {pack.contents.map((c) => (
             <TableRow key={c.element}>
-              <TableCell>{c.element}</TableCell>
+              <TableCell>
+                <RouterLink
+                  to={`/elements/${c.element}`}
+                  style={{ color: 'inherit', fontWeight: 500, textDecoration: 'none' }}
+                >
+                  {c.element}
+                </RouterLink>
+              </TableCell>
               <TableCell>{c.version ? `v${c.version}` : '—'}</TableCell>
               <TableCell>
                 <Chip size="small" label={c.versionConstraint} />
@@ -77,13 +93,6 @@ export default function PackPage() {
           ))}
         </TableBody>
       </Table>
-      <Button
-        variant="outlined"
-        sx={{ mt: 2 }}
-        onClick={() => { void handleDownload(); }}
-      >
-        Скачать пак
-      </Button>
       {dialogOpen && (
         <AddToPackDialog
           elements={(allElements ?? []).filter((e) => e.type !== 'PACK')}

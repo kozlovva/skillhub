@@ -6,11 +6,13 @@ import com.skillhub.adapters.out.jpa.repository.JpaTeamRepository;
 import com.skillhub.adapters.out.jpa.repository.JpaUserRepository;
 import com.skillhub.domain.model.TeamMembership;
 import com.skillhub.domain.model.TeamRole;
+import com.skillhub.domain.model.UserTeamRole;
 import com.skillhub.domain.port.TeamMembershipPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +27,14 @@ public class JpaTeamMembershipAdapter implements TeamMembershipPort {
     @Override
     public Optional<TeamRole> roleOf(UUID teamId, UUID userId) {
         return jpa.findRole(teamId, userId).map(TeamRole::valueOf);
+    }
+
+    @Override
+    public List<UserTeamRole> teamsOfUser(UUID userId) {
+        return jpa.findByUserId(userId).stream()
+            .map(m -> new UserTeamRole(m.getTeam().getSlug(), m.getTeam().getName(),
+                TeamRole.valueOf(m.getRole())))
+            .toList();
     }
 
     @Override

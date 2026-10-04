@@ -38,7 +38,12 @@ vi.mock('../api/social', () => ({
 }));
 
 vi.mock('../auth/KeycloakProvider', () => ({
-  useAuth: () => ({ authenticated: true, token: 't', displayName: 'A', login: vi.fn(), logout: vi.fn() }),
+  useAuth: () => ({
+    authenticated: true, token: 't', displayName: 'A',
+    isAdmin: false, myTeamRoles: { platform: 'OWNER' },
+    teamRoleOf: (slug: string) => (slug === 'platform' ? 'OWNER' : null),
+    login: vi.fn(), logout: vi.fn(),
+  }),
 }));
 
 function renderPage() {

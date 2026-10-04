@@ -48,14 +48,35 @@ async function unwrapBlobError(error: unknown): Promise<unknown> {
 }
 
 export function toApiError(error: unknown): ApiError {
-  const err = error as { response?: { status: number; data: { code?: string; message?: string; details?: unknown } }; message?: string };
+  const err = error as { response?: { status: number; data?: { code?: string; message?: string; details?: unknown } }; message?: string };
   if (err.response) {
+    const data = err.response.data ?? {};
+    const details = data.details ?? null;
+    const detailText = formatDetails(details);
+    const message = detailText
+      ? `${data.message ?? err.message ?? 'Unknown error'}: ${detailText}`
+      : data.message ?? err.message ?? 'Unknown error';
     return {
       status: err.response.status,
-      code: err.response.data?.code ?? 'ERROR',
-      message: err.response.data?.message ?? err.message ?? 'Unknown error',
-      details: err.response.data?.details ?? null,
+      code: data.code ?? 'ERROR',
+      message,
+      details,
     };
   }
   return { status: 0, code: 'NETWORK', message: err.message ?? 'Network error', details: null };
+}
+
+function formatDetails(details: unknown): string | null {
+  if (details == null) return null;
+  if (typeof details === 'string') return details;
+  if (Array.isArray(details)) {
+    return details.map((d) => String(d)).join('; ') || null;
+  }
+  if (typeof details === 'object') {
+    const parts = Object.entries(details as Record<string, unknown>)
+      .map(([field, msg]) => (msg != null && msg !== '' ? `${field} — ${String(msg)}` : null))
+      .filter((p): p is string => p != null);
+    return parts.length ? parts.join('; ') : null;
+  }
+  return String(details);
 }

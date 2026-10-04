@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Typography, Paper, List, ListItem, ListItemText, TextField, Button, Stack,
+  Typography, Paper, List, ListItem, ListItemText, TextField, Button, Stack, Avatar,
 } from '@mui/material';
+import CategoryIcon from '@mui/icons-material/Category';
 import { categories as categoriesApi } from '../api/categories';
 import { toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
+import { useAuth } from '../auth/KeycloakProvider';
 
 export default function AdminCategoriesPage() {
   const qc = useQueryClient();
   const { showError, showSuccess } = useSnackbar();
+  const { isAdmin, authenticated } = useAuth();
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
   const [parentSlug, setParentSlug] = useState('');
@@ -29,27 +32,44 @@ export default function AdminCategoriesPage() {
   });
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>Категории</Typography>
-      <List>
+    <Paper sx={{ p: 3, }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+        <CategoryIcon sx={{ color: 'primary.main' }} />
+        <Typography variant="h4" component="h1">Категории</Typography>
+      </Stack>
+      <List disablePadding sx={{ mb: 2 }}>
         {(categories ?? []).map((c) => (
-          <ListItem key={c.slug}>
-            <ListItemText primary={c.name} secondary={c.parent ? `${c.slug} (в «${c.parent}»)` : c.slug} />
+          <ListItem key={c.slug} disableGutters sx={{ py: 0.75 }}>
+            <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', mr: 2, width: 36, height: 36 }}>
+              {c.name.charAt(0).toUpperCase()}
+            </Avatar>
+            <ListItemText
+              primary={c.name}
+              secondary={c.parent ? `${c.slug} (в «${c.parent}»)` : c.slug}
+            />
           </ListItem>
         ))}
       </List>
-      <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
-        <TextField size="small" label="slug" value={slug}
-          onChange={(e) => setSlug(e.target.value)} />
-        <TextField size="small" label="Название" value={name}
-          onChange={(e) => setName(e.target.value)} />
-        <TextField size="small" label="Родитель (slug)" value={parentSlug}
-          onChange={(e) => setParentSlug(e.target.value)} />
-        <Button variant="contained" onClick={() => createMutation.mutate()}
-          disabled={!slug.trim() || !name.trim()}>
-          Создать
-        </Button>
-      </Stack>
+      {isAdmin ? (
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <TextField label="slug" value={slug}
+            onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
+          <TextField label="Название" value={name}
+            onChange={(e) => setName(e.target.value)} sx={{ width: 200 }} />
+          <TextField label="Родитель (slug)" value={parentSlug}
+            onChange={(e) => setParentSlug(e.target.value)} sx={{ width: 200 }} />
+          <Button variant="contained" onClick={() => createMutation.mutate()}
+            disabled={!slug.trim() || !name.trim()}>
+            Создать
+          </Button>
+        </Stack>
+      ) : (
+        <Typography color="text.secondary">
+          {authenticated
+            ? 'Управлять категориями могут только администраторы'
+            : 'Войдите под учётной записью администратора'}
+        </Typography>
+      )}
     </Paper>
   );
 }

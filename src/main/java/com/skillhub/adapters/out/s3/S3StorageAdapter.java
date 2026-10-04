@@ -25,6 +25,7 @@ public class S3StorageAdapter implements StoragePort {
     private final S3Presigner presigner;
 
     public S3StorageAdapter(@Value("${skillhub.storage.endpoint}") String endpoint,
+                            @Value("${skillhub.storage.presign-endpoint:}") String presignEndpoint,
                             @Value("${skillhub.storage.access-key}") String accessKey,
                             @Value("${skillhub.storage.secret-key}") String secretKey,
                             @Value("${skillhub.storage.bucket}") String bucket) {
@@ -38,7 +39,7 @@ public class S3StorageAdapter implements StoragePort {
             .forcePathStyle(true)
             .build();
         this.presigner = S3Presigner.builder()
-            .endpointOverride(URI.create(endpoint))
+            .endpointOverride(URI.create(presignEndpoint.isBlank() ? endpoint : presignEndpoint))
             .region(Region.US_EAST_1)
             .credentialsProvider(credentials)
             .serviceConfiguration(S3Configuration.builder()

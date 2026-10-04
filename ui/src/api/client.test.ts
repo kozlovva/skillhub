@@ -44,4 +44,21 @@ describe('api client', () => {
       status: 409, code: 'CONFLICT', message: 'Version exists', details: null,
     });
   });
+
+  it('appends validation details to error message', async () => {
+    const { toApiError } = await import('./client');
+    const error = {
+      response: {
+        status: 422,
+        data: {
+          code: 'VALIDATION_FAILED',
+          message: 'Request validation failed',
+          details: { slug: 'slug must be kebab-case' },
+        },
+      },
+    };
+    const apiError = toApiError(error);
+    expect(apiError.message).toBe('Request validation failed: slug — slug must be kebab-case');
+    expect(apiError.details).toEqual({ slug: 'slug must be kebab-case' });
+  });
 });

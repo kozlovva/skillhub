@@ -1,25 +1,59 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { TextField, CircularProgress, Typography, Box, Stack } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import {
+  TextField, InputAdornment, Typography, Box, Stack, Skeleton, Paper,
+  Chip, Collapse, IconButton, useScrollTrigger, Divider,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import { search } from '../api/search';
 import { categories as categoriesApi } from '../api/categories';
+import { useTheme } from '@mui/material/styles';
 import ElementCard from '../components/ElementCard';
-import FiltersSidebar from '../components/FiltersSidebar';
+
+function ChipGroup({ title, chips }: {
+  title: string;
+  chips: { key: string; label: string; selected: boolean; onClick: () => void }[];
+}) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+      <Typography variant="overline" sx={{ color: 'text.secondary' }}>{title}</Typography>
+      {chips.map((c) => (
+        <Chip
+          key={c.key}
+          label={c.label}
+          onClick={c.onClick}
+          color={c.selected ? 'primary' : 'default'}
+          size="small"
+          variant={c.selected ? 'filled' : 'outlined'}
+        />
+      ))}
+    </Stack>
+  );
+}
 
 export default function CatalogPage() {
+  const theme = useTheme();
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [type, setType] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(t);
   }, [q]);
 
-  const { data, isLoading } = useQuery({
+  const scrolled = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 96,
+  });
+
+  const { data, isPending } = useQuery({
     queryKey: ['search', debouncedQ, type, category],
     queryFn: () => search.search({ q: debouncedQ, type: type ?? undefined, category: category ?? undefined }),
+    placeholderData: keepPreviousData,
   });
 
   const { data: categories } = useQuery({
@@ -27,40 +61,121 @@ export default function CatalogPage() {
     queryFn: categoriesApi.list,
   });
 
+  const focusSearch = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const input = searchRef.current?.querySelector('input');
+    input?.focus({ preventScroll: true });
+  };
+
+  const typeChips = [
+    { key: 'all', label: 'Все', selected: type === null, onClick: () => setType(null) },
+    ...Object.entries(data?.facetsByType ?? {}).map(([t, count]) => ({
+      key: t, label: `${t} (${count})`, selected: type === t, onClick: () => setType(t),
+    })),
+  ];
+
+  const categoryChips = [
+    { key: 'all', label: 'Все', selected: category === null, onClick: () => setCategory(null) },
+    ...(categories ?? []).map((c) => ({
+      key: c.slug, label: c.name, selected: category === c.slug, onClick: () => setCategory(c.slug),
+    })),
+  ];
+
+  const categoryNames = Object.fromEntries((categories ?? []).map((c) => [c.slug, c.name]));
+
   return (
-    <>
-      <TextField
-        fullWidth
-        placeholder="Поиск"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-        <Box sx={{ width: { xs: '100%', md: 260 }, flexShrink: 0 }}>
-          <FiltersSidebar
-            facetsByType={data?.facetsByType ?? {}}
-            categories={categories ?? []}
-            type={type}
-            category={category}
-            onChange={(next) => {
-              if ('type' in next) setType(next.type ?? null);
-              if ('category' in next) setCategory(next.category ?? null);
+    <Stack spacing={3}>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 0.5 }}>Каталог скилов</Typography>
+        <Typography color="text.secondary">
+          {data ? `Найдено: ${data.total}` : 'Библиотека элементов для вашей команды'}
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          position: 'sticky',
+          top: { xs: 56, md: 64 },
+          zIndex: 3,
+          py: 1,
+          bgcolor: 'background.default',
+          borderBottom: scrolled ? `1px solid ${theme.palette.divider}` : '1px solid transparent',
+          transition: 'border-color 200ms ease',
+        }}
+      >
+        <Collapse in={!scrolled}>
+          <TextField
+            ref={searchRef}
+            fullWidth
+            placeholder="Поиск"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            sx={{
+              bgcolor: 'background.paper',
+              mb: 1.5,
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
-        </Box>
-        <Box sx={{ flexGrow: 1 }}>
-          {isLoading && <CircularProgress />}
-          {data && data.items.length === 0 && (
-            <Typography color="text.secondary">Ничего не найдено</Typography>
+        </Collapse>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          {scrolled && (
+            <IconButton
+              onClick={focusSearch}
+              aria-label="Поиск"
+              size="small"
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+                bgcolor: 'background.paper',
+              }}
+            >
+              <SearchIcon fontSize="small" />
+            </IconButton>
           )}
-          <Box>
-            {data?.items.map((el) => (
-              <ElementCard key={el.slug} element={el} />
+          <ChipGroup title="Тип" chips={typeChips} />
+          <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
+          <ChipGroup title="Категория" chips={categoryChips} />
+        </Stack>
+      </Box>
+
+      <Box>
+        {isPending && (
+          <Stack spacing={1.5}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} variant="rounded" height={110} sx={{ }} />
             ))}
-          </Box>
-        </Box>
-      </Stack>
-    </>
+          </Stack>
+        )}
+        {!isPending && data && data.items.length === 0 && (
+          <Paper
+            variant="outlined"
+            sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}
+          >
+            <SearchOffIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+            <Typography variant="h6">Ничего не найдено</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Попробуйте изменить запрос или сбросить фильтры
+            </Typography>
+          </Paper>
+        )}
+        {!isPending && data && data.items.map((el) => (
+          <ElementCard
+            key={el.slug}
+            element={el}
+            avgRating={el.avgRating ?? undefined}
+            ratingCount={el.ratingCount ?? undefined}
+            categoryNames={categoryNames}
+          />
+        ))}
+      </Box>
+    </Stack>
   );
 }

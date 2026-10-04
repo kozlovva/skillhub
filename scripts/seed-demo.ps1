@@ -12,11 +12,13 @@ function Sha256Hex([string]$s) {
 }
 
 $headers = @{ Authorization = "Bearer $DemoToken" }
-$headersJson = @{ Authorization = "Bearer $DemoToken"; "Content-Type" = "application/json" }
+$headersJson = @{ Authorization = "Bearer $DemoToken"; "Content-Type" = "application/json; charset=utf-8" }
 
 function Invoke-Json([string]$Method, [string]$Uri, $Body) {
     $json = $Body | ConvertTo-Json -Depth 5
-    Invoke-RestMethod -Uri "$ApiBase$Uri" -Method $Method -Headers $headersJson -Body $json
+    # PS 5.1 кодирует строковый -Body в Latin-1 без charset=utf-8 -> кириллица становится '?'
+    $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+    Invoke-RestMethod -Uri "$ApiBase$Uri" -Method $Method -Headers $headersJson -Body $bytes
 }
 
 # --- 1. Admin user + API token (direct SQL, auth chicken-and-egg) ---
@@ -49,7 +51,14 @@ Write-Host "[2/5] teams created"
 foreach ($c in @(
     @{ slug = "dev-tools";   name = "Dev Tools" },
     @{ slug = "ai";          name = "AI" },
-    @{ slug = "documents";   name = "Documents" }
+    @{ slug = "documents";   name = "Documents" },
+    @{ slug = "testing";     name = "Testing" },
+    @{ slug = "security";    name = "Security" },
+    @{ slug = "data";        name = "Data" },
+    @{ slug = "devops";      name = "DevOps" },
+    @{ slug = "monitoring";  name = "Monitoring" },
+    @{ slug = "frontend";    name = "Frontend" },
+    @{ slug = "mobile";      name = "Mobile" }
 )) {
     try { Invoke-Json POST "/api/categories" $c | Out-Null } catch { if ($_.Exception.Response.StatusCode.value__ -ne 409) { throw } }
 }
@@ -86,7 +95,26 @@ $elements = @(
         @{ v = "2.1.0"; changelog = "Support conventional commits + scopes" }) },
     @{ slug = "meeting-notes-skill"; type = "SKILL"; name = "Meeting Notes Skill"; description = "Скилл для саммаризации встреч: action items, решения, вопросы."; team = "ai-lab"; category = "ai"; tags = @("meetings", "summary"); visibility = "TEAM"; versions = @(
         @{ v = "0.3.0"; changelog = "Internal draft" }) },
-    @{ slug = "onboarding-pack"; type = "PACK"; name = "New Joiner Onboarding Pack"; description = "Пак для новичка: доклады, гит-конвенции и PDF-отчёты."; team = "platform"; category = "dev-tools"; tags = @("onboarding", "pack"); visibility = "PUBLIC"; versions = @() }
+    @{ slug = "onboarding-pack"; type = "PACK"; name = "New Joiner Onboarding Pack"; description = "Пак для новичка: доклады, гит-конвенции и PDF-отчёты."; team = "platform"; category = "dev-tools"; tags = @("onboarding", "pack"); visibility = "PUBLIC"; versions = @() },
+    @{ slug = "sql-migrator"; type = "SCRIPT"; name = "SQL Migrator"; description = "Скрипт генерации и применения миграций: diff-схемы, откат, dry-run."; team = "platform"; category = "dev-tools"; tags = @("sql", "db", "ci"); visibility = "PUBLIC"; versions = @(
+        @{ v = "1.4.0"; changelog = "Поддержка отката и dry-run"; rating = 5; review = "Миграции наконец без страха, откат работает как надо." },
+        @{ v = "1.5.0"; changelog = "Параллельное применение индексов" }) },
+    @{ slug = "api-design-lint"; type = "SCRIPT"; name = "API Design Lint"; description = "Линтер OpenAPI-спецификаций на соответствие гайдам команды: нейминг, пагинация, ошибки."; team = "platform"; category = "dev-tools"; tags = @("openapi", "lint", "api"); visibility = "PUBLIC"; versions = @(
+        @{ v = "0.8.0"; changelog = "Первые правила"; rating = 4; review = "Полезно, но правил пока маловато." },
+        @{ v = "0.9.0"; changelog = "Правила для пагинации и кодов ошибок" }) },
+    @{ slug = "changelog-writer"; type = "SKILL"; name = "Changelog Writer"; description = "Скилл генерации changelog из коммитов и PR: группировка по типам, человекочитаемые формулировки."; team = "ai-lab"; category = "ai"; tags = @("changelog", "release", "docs"); visibility = "PUBLIC"; versions = @(
+        @{ v = "1.2.0"; changelog = "Группировка по типам коммитов"; rating = 5; review = "Релизные заметки теперь пишутся за минуту." },
+        @{ v = "1.3.0"; changelog = "Поддержка монорепо" }) },
+    @{ slug = "test-data-faker"; type = "SKILL"; name = "Test Data Faker"; description = "Генератор правдоподобных тестовых данных: ФИО, адреса, ИНН, карты — с локализацией и сидом."; team = "platform"; category = "dev-tools"; tags = @("testing", "data", "fixtures"); visibility = "PUBLIC"; versions = @(
+        @{ v = "2.0.1"; changelog = "Фикс локали ru_RU"; rating = 4; review = "Данные правдоподобные, но хочется больше сценариев." }) },
+    @{ slug = "docs-translator"; type = "SKILL"; name = "Docs Translator"; description = "Скилл перевода документации с сохранением терминологии и разметки markdown."; team = "ai-lab"; category = "documents"; tags = @("i18n", "docs", "translation"); visibility = "PUBLIC"; versions = @(
+        @{ v = "0.6.0"; changelog = "Бета перевода ru-en"; rating = 4; review = "Терминологию держит, сложные таблицы иногда ломает." },
+        @{ v = "0.7.0"; changelog = "Аккуратная работа с таблицами" }) },
+    @{ slug = "diagram-renderer"; type = "SKILL"; name = "Diagram Renderer"; description = "Рендер диаграмм из текста (mermaid, plantuml) в SVG/PNG для документации и отчётов."; team = "platform"; category = "documents"; tags = @("diagrams", "docs", "plantuml"); visibility = "PUBLIC"; versions = @(
+        @{ v = "2.0.0"; changelog = "Поддержка mermaid 10"; rating = 4; review = "Быстро и предсказуемо, кэш ускоряет повторные сборки." }) },
+    @{ slug = "incident-postmortem"; type = "AGENT"; name = "Incident Postmortem Agent"; description = "AI-агент для черновиков постмортемов: собирает таймлайн из алертов, коммитов и чатов."; team = "ai-lab"; category = "ai"; tags = @("incident", "postmortem", "sre"); visibility = "PUBLIC"; versions = @(
+        @{ v = "0.2.0"; changelog = "Черновик таймлайна из мониторинга" }) },
+    @{ slug = "release-notes-pack"; type = "PACK"; name = "Release Pack"; description = "Пак релизного цикла: changelog, проверка конвенций и PDF-отчёт для стейкхолдеров."; team = "ai-lab"; category = "documents"; tags = @("release", "pack", "docs"); visibility = "PUBLIC"; versions = @() }
 )
 
 foreach ($e in $elements) {
@@ -103,6 +131,9 @@ foreach ($e in $elements) {
 # Pack contents
 try { Invoke-Json POST "/api/packs/onboarding-pack/contents" @{ element = "pdf-report-skill"; versionConstraint = "latest" } | Out-Null } catch {}
 try { Invoke-Json POST "/api/packs/onboarding-pack/contents" @{ element = "git-convention-check"; versionConstraint = "latest" } | Out-Null } catch {}
+try { Invoke-Json POST "/api/packs/release-notes-pack/contents" @{ element = "changelog-writer"; versionConstraint = "latest" } | Out-Null } catch {}
+try { Invoke-Json POST "/api/packs/release-notes-pack/contents" @{ element = "git-convention-check"; versionConstraint = "latest" } | Out-Null } catch {}
+try { Invoke-Json POST "/api/packs/release-notes-pack/contents" @{ element = "pdf-report-skill"; versionConstraint = "latest" } | Out-Null } catch {}
 Write-Host "[4/5] elements, versions and pack contents seeded"
 
 # --- 5. Social: ratings, reviews, favorites ---
@@ -114,7 +145,9 @@ foreach ($e in $elements) {
         }
     }
 }
-try { Invoke-RestMethod -Uri "$ApiBase/api/elements/pdf-report-skill/favorite" -Method Post -Headers $headers | Out-Null } catch {}
+foreach ($slug in @("pdf-report-skill", "code-review-agent", "changelog-writer", "sql-migrator", "diagram-renderer")) {
+    try { Invoke-RestMethod -Uri "$ApiBase/api/elements/$slug/favorite" -Method Post -Headers $headers | Out-Null } catch {}
+}
 Write-Host "[5/5] ratings, reviews and favorites seeded"
 
 Write-Host "`nDone. Open http://localhost:3000 — catalog now has $($elements.Count) elements."

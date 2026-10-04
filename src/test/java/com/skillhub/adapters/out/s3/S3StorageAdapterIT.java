@@ -31,7 +31,7 @@ class S3StorageAdapterIT {
         minio.start();
         storage = new S3StorageAdapter(
             "http://" + minio.getHost() + ":" + minio.getMappedPort(9000),
-            MINIO_USER, MINIO_PASSWORD, BUCKET);
+            "", MINIO_USER, MINIO_PASSWORD, BUCKET);
         storage.ensureBucket();
     }
 
