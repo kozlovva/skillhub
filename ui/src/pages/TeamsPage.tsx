@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, TextField, Button,
-  MenuItem, Select, FormControl, InputLabel, Stack, Divider, Box,
+  MenuItem, Select, FormControl, InputLabel, Stack, Divider,
 } from '@mui/material';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -11,6 +11,7 @@ import { teams as teamsApi } from '../api/teams';
 import { toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
+import PageHeader from '../components/PageHeader';
 
 export default function TeamsPage() {
   const qc = useQueryClient();
@@ -49,12 +50,10 @@ export default function TeamsPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4" sx={{ mb: 0.5 }}>Команды</Typography>
-        <Typography color="text.secondary">
-          Управление командами и доступом к элементам
-        </Typography>
-      </Box>
+      <PageHeader
+        title="Команды"
+        subtitle="Управление командами и доступом к элементам"
+      />
       <Paper sx={{ p: 3, }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <GroupsIcon sx={{ color: 'primary.main' }} />

@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Box, Link, Paper, Typography } from '@mui/material';
+import { Stack, Link, Paper, Typography, Box } from '@mui/material';
 import guide from '../content/user-guide.md?raw';
+import PageHeader from '../components/PageHeader';
 
 const heading =
   (variant: 'h4' | 'h5' | 'h6', component: 'h1' | 'h2' | 'h3') =>
@@ -13,7 +14,6 @@ const heading =
   );
 
 const components: Components = {
-  h1: heading('h4', 'h1'),
   h2: heading('h5', 'h2'),
   h3: heading('h6', 'h3'),
   p: ({ children }) => (
@@ -89,10 +89,11 @@ const components: Components = {
 
 export default function GuidePage() {
   return (
-    <Box>
+    <Stack spacing={3}>
+      <PageHeader title="Инструкция" />
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {guide}
       </ReactMarkdown>
-    </Box>
+    </Stack>
   );
 }

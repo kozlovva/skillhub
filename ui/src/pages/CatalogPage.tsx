@@ -14,6 +14,7 @@ import { search } from '../api/search';
 import { categories as categoriesApi } from '../api/categories';
 import { useTheme } from '@mui/material/styles';
 import ElementCard from '../components/ElementCard';
+import PageHeader from '../components/PageHeader';
 
 type SortOption = 'relevance' | 'rating' | 'published';
 
@@ -76,12 +77,10 @@ export default function CatalogPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4" sx={{ mb: 0.5 }}>Каталог скилов</Typography>
-        <Typography color="text.secondary">
-          {data ? `Найдено: ${data.total}` : 'Библиотека элементов для вашей команды'}
-        </Typography>
-      </Box>
+      <PageHeader
+        title="Каталог скилов"
+        subtitle={data ? `Найдено: ${data.total}` : 'Библиотека элементов для вашей команды'}
+      />
 
       <Box
         sx={{
