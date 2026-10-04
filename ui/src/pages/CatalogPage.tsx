@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   TextField, InputAdornment, Typography, Box, Stack, Skeleton, Paper,
-  Chip, Collapse, IconButton, useScrollTrigger, Divider,
-  Button, Menu, MenuItem, ListItemIcon,
+  Collapse, IconButton, useScrollTrigger, Divider,
+  Button, Menu, MenuItem, ListItemIcon, FormControl, InputLabel, Select,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
@@ -14,27 +14,6 @@ import { search } from '../api/search';
 import { categories as categoriesApi } from '../api/categories';
 import { useTheme } from '@mui/material/styles';
 import ElementCard from '../components/ElementCard';
-
-function ChipGroup({ title, chips }: {
-  title: string;
-  chips: { key: string; label: string; selected: boolean; onClick: () => void }[];
-}) {
-  return (
-    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-      <Typography variant="overline" sx={{ color: 'text.secondary' }}>{title}</Typography>
-      {chips.map((c) => (
-        <Chip
-          key={c.key}
-          label={c.label}
-          onClick={c.onClick}
-          color={c.selected ? 'primary' : 'default'}
-          size="small"
-          variant={c.selected ? 'filled' : 'outlined'}
-        />
-      ))}
-    </Stack>
-  );
-}
 
 type SortOption = 'relevance' | 'rating' | 'published';
 
@@ -87,20 +66,6 @@ export default function CatalogPage() {
     const input = searchRef.current?.querySelector('input');
     input?.focus({ preventScroll: true });
   };
-
-  const typeChips = [
-    { key: 'all', label: 'Все', selected: type === null, onClick: () => setType(null) },
-    ...Object.entries(data?.facetsByType ?? {}).map(([t, count]) => ({
-      key: t, label: `${t} (${count})`, selected: type === t, onClick: () => setType(t),
-    })),
-  ];
-
-  const categoryChips = [
-    { key: 'all', label: 'Все', selected: category === null, onClick: () => setCategory(null) },
-    ...(categories ?? []).map((c) => ({
-      key: c.slug, label: c.name, selected: category === c.slug, onClick: () => setCategory(c.slug),
-    })),
-  ];
 
   const categoryNames = Object.fromEntries((categories ?? []).map((c) => [c.slug, c.name]));
 
@@ -236,9 +201,36 @@ export default function CatalogPage() {
               <SearchIcon fontSize="small" />
             </IconButton>
           )}
-          <ChipGroup title="Тип" chips={typeChips} />
-          <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
-          <ChipGroup title="Категория" chips={categoryChips} />
+          <FormControl size="small">
+            <InputLabel id="catalog-type-label">Тип</InputLabel>
+            <Select
+              labelId="catalog-type-label"
+              label="Тип"
+              value={type ?? ''}
+              onChange={(e) => setType(e.target.value || null)}
+              sx={{ width: 200 }}
+            >
+              <MenuItem value="">Все типы</MenuItem>
+              {Object.entries(data?.facetsByType ?? {}).map(([t, count]) => (
+                <MenuItem key={t} value={t}>{`${t} (${count})`}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small">
+            <InputLabel id="catalog-category-label">Категория</InputLabel>
+            <Select
+              labelId="catalog-category-label"
+              label="Категория"
+              value={category ?? ''}
+              onChange={(e) => setCategory(e.target.value || null)}
+              sx={{ width: 200 }}
+            >
+              <MenuItem value="">Все категории</MenuItem>
+              {(categories ?? []).map((c) => (
+                <MenuItem key={c.slug} value={c.slug}>{c.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       </Box>
 

@@ -18,6 +18,15 @@ vi.mock('../api/search', () => ({
   },
 }));
 
+vi.mock('../api/categories', () => ({
+  categories: {
+    list: vi.fn().mockResolvedValue([
+      { slug: 'dev', name: 'Разработка' },
+      { slug: 'ops', name: 'Эксплуатация' },
+    ]),
+  },
+}));
+
 vi.mock('../auth/KeycloakProvider', () => ({
   useAuth: () => ({ authenticated: true, token: 't', displayName: 'A', login: vi.fn(), logout: vi.fn() }),
 }));
@@ -62,6 +71,33 @@ test('sorting control changes query params', async () => {
   await userEvent.click(await screen.findByRole('menuitem', { name: 'По возрастанию' }));
   await waitFor(() => expect(search.search).toHaveBeenCalledWith(
     expect.objectContaining({ sort: 'rating', order: 'asc' })
+  ));
+});
+
+test('type filter changes query params', async () => {
+  const { search } = await import('../api/search');
+  renderPage();
+  await screen.findByText('PDF Skill');
+  await userEvent.click(screen.getByRole('combobox', { name: 'Тип' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'SKILL (1)' }));
+  await waitFor(() => expect(search.search).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'SKILL' })
+  ));
+});
+
+test('category filter resets via Все категории', async () => {
+  const { search } = await import('../api/search');
+  renderPage();
+  await screen.findByText('PDF Skill');
+  await userEvent.click(screen.getByRole('combobox', { name: 'Категория' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'Разработка' }));
+  await waitFor(() => expect(search.search).toHaveBeenCalledWith(
+    expect.objectContaining({ category: 'dev' })
+  ));
+  await userEvent.click(screen.getByRole('combobox', { name: 'Категория' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'Все категории' }));
+  await waitFor(() => expect(search.search).toHaveBeenLastCalledWith(
+    expect.objectContaining({ category: undefined })
   ));
 });
 
