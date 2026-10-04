@@ -2,7 +2,9 @@ package com.skillhub.adapters.in.rest;
 
 import com.skillhub.adapters.in.rest.dto.AddMemberRequest;
 import com.skillhub.adapters.in.rest.dto.CandidateResponse;
+import com.skillhub.adapters.in.rest.dto.ChangeRoleRequest;
 import com.skillhub.adapters.in.rest.dto.CreateTeamRequest;
+import com.skillhub.adapters.in.rest.dto.TeamMemberResponse;
 import com.skillhub.adapters.in.rest.dto.TeamResponse;
 import com.skillhub.adapters.in.security.CurrentUserResolver;
 import com.skillhub.application.service.TeamUseCase;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -56,5 +59,28 @@ public class TeamController {
         return ResponseEntity.ok(Map.of(
             "userId", member.userId().toString(),
             "role", member.role().name()));
+    }
+
+    @GetMapping("/{slug}/members")
+    public List<TeamMemberResponse> members(@PathVariable String slug, Authentication auth) {
+        return teamUseCase.members(slug, currentUser.resolve(auth)).stream()
+            .map(TeamMemberResponse::from).toList();
+    }
+
+    @PatchMapping("/{slug}/members/{userId}")
+    public TeamMemberResponse changeRole(@PathVariable String slug,
+                                         @PathVariable UUID userId,
+                                         @Valid @RequestBody ChangeRoleRequest req,
+                                         Authentication auth) {
+        return TeamMemberResponse.from(
+            teamUseCase.changeRole(slug, userId, req.role(), currentUser.resolve(auth)));
+    }
+
+    @DeleteMapping("/{slug}/members/{userId}")
+    public ResponseEntity<Void> removeMember(@PathVariable String slug,
+                                             @PathVariable UUID userId,
+                                             Authentication auth) {
+        teamUseCase.removeMember(slug, userId, currentUser.resolve(auth));
+        return ResponseEntity.noContent().build();
     }
 }
