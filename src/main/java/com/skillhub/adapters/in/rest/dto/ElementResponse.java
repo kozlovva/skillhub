@@ -16,7 +16,7 @@ public record ElementResponse(
     public static ElementResponse from(Element e, RatingSummary rating) {
         return new ElementResponse(
             e.getSlug(), e.getType().name(), e.getName(), e.getDescription(),
-            e.getTeam().getSlug(),
+            e.getTeam() == null ? null : e.getTeam().getSlug(),
             e.getCategory() == null ? null : e.getCategory().getSlug(),
             e.getTags(), e.getVisibility().name(),
             e.getLatestVersion(), e.getDownloadsCount(),

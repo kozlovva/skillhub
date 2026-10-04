@@ -116,6 +116,30 @@ class VersionUseCaseTest {
     }
 
     @Test
+    void authorPublishesTeamLessElement() {
+        Element personal = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(personal));
+        ElementVersion published = useCase.publish("my-skill", zip("1.0.0"), "init", owner);
+        assertThat(published.getS3_key()).isEqualTo("personal/my-skill/1.0.0.zip");
+    }
+
+    @Test
+    void nonAuthorCannotPublishTeamLessElement() {
+        User stranger = User.builder().id(UUID.randomUUID()).ssoSubject("s2").email("e2")
+            .displayName("Stranger").admin(false).createdAt(Instant.now()).build();
+        Element personal = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(personal));
+        assertThatThrownBy(() -> useCase.publish("my-skill", zip("1.0.0"), "init", stranger))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
     void getArchiveReturnsPresignedUrlAndIncrementsDownloads() {
         ElementVersion version = ElementVersion.builder().id(UUID.randomUUID())
             .element(element).version("1.0.0").s3_key("platform/my-skill/1.0.0.zip").build();

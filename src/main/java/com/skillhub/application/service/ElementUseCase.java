@@ -3,6 +3,7 @@ package com.skillhub.application.service;
 import com.skillhub.core.exception.ConflictException;
 import com.skillhub.core.exception.ForbiddenException;
 import com.skillhub.core.exception.NotFoundException;
+import com.skillhub.core.exception.UnprocessableException;
 import com.skillhub.domain.model.*;
 import com.skillhub.domain.port.CategoryRepositoryPort;
 import com.skillhub.domain.port.ClockPort;
@@ -39,11 +40,17 @@ public class ElementUseCase {
 
     @Transactional
     public Element create(CreateCommand cmd, User author) {
-        Team team = teams.findBySlug(cmd.teamSlug())
-            .orElseThrow(() -> new NotFoundException("Team not found: " + cmd.teamSlug()));
-        if (!access.canPublish(team, author)) {
-            throw new ForbiddenException(
-                "Only OWNER/MAINTAINER can publish to team " + team.getSlug());
+        if (cmd.teamSlug() == null && cmd.visibility() == Visibility.TEAM) {
+            throw new UnprocessableException("TEAM visibility requires a team", cmd.teamSlug());
+        }
+        Team team = null;
+        if (cmd.teamSlug() != null) {
+            team = teams.findBySlug(cmd.teamSlug())
+                .orElseThrow(() -> new NotFoundException("Team not found: " + cmd.teamSlug()));
+            if (!access.canPublish(team, author)) {
+                throw new ForbiddenException(
+                    "Only OWNER/MAINTAINER can publish to team " + team.getSlug());
+            }
         }
         if (elements.existsBySlug(cmd.slug())) {
             throw new ConflictException("Element already exists: " + cmd.slug());

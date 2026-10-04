@@ -59,7 +59,10 @@ public class VersionUseCase {
     public ElementVersion publish(String slug, byte[] zipBytes, String changelog, User publisher) {
         Element element = elements.findBySlug(slug)
             .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
-        if (!access.canPublish(element.getTeam(), publisher)) {
+        if (element.getTeam() == null && !access.canPublishPersonal(element, publisher)) {
+            throw new ForbiddenException("Only the author can publish versions of a personal element");
+        }
+        if (element.getTeam() != null && !access.canPublish(element.getTeam(), publisher)) {
             throw new ForbiddenException("Only OWNER/MAINTAINER can publish to this team");
         }
 
@@ -70,7 +73,8 @@ public class VersionUseCase {
                 "Version " + info.manifestVersion() + " already exists for " + slug);
         }
 
-        String s3Key = element.getTeam().getSlug() + "/" + element.getSlug()
+        String s3Key = (element.getTeam() == null ? "personal/" + element.getSlug()
+            : element.getTeam().getSlug() + "/" + element.getSlug())
             + "/" + info.manifestVersion() + ".zip";
         storage.upload(s3Key, zipBytes);
 

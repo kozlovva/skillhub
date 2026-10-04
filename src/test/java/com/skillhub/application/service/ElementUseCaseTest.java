@@ -3,6 +3,7 @@ package com.skillhub.application.service;
 import com.skillhub.core.exception.ConflictException;
 import com.skillhub.core.exception.ForbiddenException;
 import com.skillhub.core.exception.NotFoundException;
+import com.skillhub.core.exception.UnprocessableException;
 import com.skillhub.domain.model.*;
 import com.skillhub.domain.port.*;
 import com.skillhub.domain.service.AccessService;
@@ -16,7 +17,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ElementUseCaseTest {
@@ -85,6 +89,23 @@ class ElementUseCaseTest {
         when(teams.findBySlug("platform")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> useCase.create(cmd("my-skill"), owner))
             .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void createWithoutTeamSucceeds() {
+        ElementUseCase.CreateCommand solo = new ElementUseCase.CreateCommand(
+            "solo", ElementType.SCRIPT, "Solo", "d", null, null, new String[0], Visibility.PUBLIC);
+        Element created = useCase.create(solo, owner);
+        assertThat(created.getTeam()).isNull();
+        verify(teams, never()).findBySlug(any());
+    }
+
+    @Test
+    void teamVisibilityWithoutTeamIsUnprocessable() {
+        ElementUseCase.CreateCommand solo = new ElementUseCase.CreateCommand(
+            "solo", ElementType.SCRIPT, "Solo", "d", null, null, new String[0], Visibility.TEAM);
+        assertThatThrownBy(() -> useCase.create(solo, owner))
+            .isInstanceOf(UnprocessableException.class);
     }
 
     @Test

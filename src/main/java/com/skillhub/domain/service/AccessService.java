@@ -32,6 +32,14 @@ public class AccessService {
             .orElse(false);
     }
 
+    public boolean canPublishPersonal(Element element, User user) {
+        if (user == null) {
+            return false;
+        }
+        return user.isAdmin() || (element.getAuthor() != null
+            && user.getId().equals(element.getAuthor().getId()));
+    }
+
     public boolean isTeamMember(Team team, User user) {
         return membership.roleOf(team.getId(), user.getId()).isPresent();
     }

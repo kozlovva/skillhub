@@ -10,7 +10,7 @@ public record CreateElementRequest(
     String type,
     @NotBlank String name,
     String description,
-    @NotBlank String team,
+    String team,
     String category,
     String[] tags,
     @NotBlank @Pattern(regexp = "PUBLIC|TEAM", message = "visibility must be one of: PUBLIC, TEAM")

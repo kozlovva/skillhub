@@ -18,7 +18,7 @@ public class JpaElement {
     @Column(nullable = false) private String type;
     @Column(nullable = false) private String name;
     @Column(nullable = false) private String description;
-    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "team_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "team_id")
     private JpaTeam team;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "category_id")
     private JpaCategory category;
