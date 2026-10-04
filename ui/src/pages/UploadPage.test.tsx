@@ -89,6 +89,13 @@ test('accepts a file via drag and drop', async () => {
   expect(await screen.findByText('dropped.zip')).toBeInTheDocument();
 });
 
+test('shows archive manifest instructions', async () => {
+  renderPage();
+  expect(await screen.findByText('Требования к архиву')).toBeInTheDocument();
+  expect(screen.getByText(/manifest\.json/)).toBeInTheDocument();
+  expect(screen.getByText(/"version": "1\.0\.0"/)).toBeInTheDocument();
+});
+
 test('renders form and loads teams and categories', async () => {
   renderPage();
   expect(await screen.findByLabelText(/^Название/)).toBeInTheDocument();

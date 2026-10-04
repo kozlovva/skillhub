@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  Autocomplete, Box, Button, MenuItem, Paper, Stack, TextField, Typography,
+  Alert, Autocomplete, Box, Button, MenuItem, Paper, Stack, TextField, Typography,
 } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
 import { elements as elementsApi } from '../api/elements';
@@ -239,6 +239,29 @@ export default function UploadPage() {
             )}
           </Stack>
         </Box>
+        <Alert severity="info">
+          <Typography variant="subtitle2" gutterBottom>Требования к архиву</Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2.5, typography: 'body2' }}>
+            <li>ZIP-архив до 50 МБ (распакованное содержимое до 200 МБ, не более 5000 файлов)</li>
+            <li>
+              В корне архива — <code>manifest.json</code> с обязательными полями:{' '}
+              <code>name</code> и <code>version</code> (semver, например 1.2.3)
+            </li>
+            <li>Необязательные поля манифеста: <code>description</code>, <code>type</code></li>
+            <li>Повторная загрузка той же версии элемента вернёт ошибку</li>
+          </Box>
+          <Box
+            component="pre"
+            sx={{ mt: 1, mb: 0, p: 1, borderRadius: 1, bgcolor: 'action.hover', overflowX: 'auto', typography: 'body2' }}
+          >
+{`{
+  "name": "my-skill",
+  "version": "1.0.0",
+  "description": "Описание",
+  "type": "SKILL"
+}`}
+          </Box>
+        </Alert>
         <TextField label="Changelog" value={changelog} onChange={(e) => setChangelog(e.target.value)} />
         <Box>
           <Button
