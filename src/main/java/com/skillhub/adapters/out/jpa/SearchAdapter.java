@@ -5,6 +5,8 @@ import com.skillhub.adapters.out.jpa.mapper.ElementJpaMapper;
 import com.skillhub.application.dto.RatingSummary;
 import com.skillhub.application.dto.SearchQuery;
 import com.skillhub.application.dto.SearchQueryResult;
+import com.skillhub.application.dto.SortBy;
+import com.skillhub.application.dto.SortOrder;
 import com.skillhub.domain.model.Element;
 import com.skillhub.domain.port.SearchPort;
 import jakarta.persistence.EntityManager;
@@ -37,17 +39,34 @@ public class SearchAdapter implements SearchPort {
         AND (CAST(:type AS text) IS NULL OR e.type = :type)
         """;
 
+    private static final String RATING_JOIN =
+        " LEFT JOIN LATERAL (SELECT AVG(r.rating) AS avg_rating FROM ratings r " +
+        "WHERE r.element_id = e.id) rt ON true ";
+
+    private String orderBy(SortBy sortBy, SortOrder order) {
+        String dir = order.sql();
+        return switch (sortBy) {
+            case RELEVANCE -> "ORDER BY CASE WHEN :q = '' THEN 0 " +
+                "ELSE ts_rank(e.search_vector, plainto_tsquery('russian', :q)) END DESC, " +
+                "e.downloads_count DESC, e.id";
+            case DOWNLOADS -> "ORDER BY e.downloads_count " + dir + ", e.id";
+            case RATING -> "ORDER BY rt.avg_rating " + dir + " NULLS LAST, e.id";
+            case PUBLISHED -> "ORDER BY (SELECT MAX(v.published_at) FROM element_versions v " +
+                "WHERE v.element_id = e.id AND v.status = 'PUBLISHED') " + dir + " NULLS LAST, e.id";
+        };
+    }
+
     @Override
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public SearchQueryResult search(SearchQuery q) {
         String query = q.q() == null ? "" : q.q();
 
+        boolean joinRating = q.sortBy() == SortBy.RATING;
         List<JpaElement> items = em.createNativeQuery(
-                "SELECT e.* FROM elements e WHERE " + WHERE +
-                " ORDER BY CASE WHEN :q = '' THEN 0 " +
-                "ELSE ts_rank(e.search_vector, plainto_tsquery('russian', :q)) END DESC, " +
-                "e.downloads_count DESC LIMIT :limit OFFSET :offset", JpaElement.class)
+                "SELECT e.* FROM elements e" + (joinRating ? RATING_JOIN : "") +
+                " WHERE " + WHERE + " " + orderBy(q.sortBy(), q.sortOrder()) +
+                " LIMIT :limit OFFSET :offset", JpaElement.class)
             .setParameter("userId", q.userId())
             .setParameter("admin", q.admin())
             .setParameter("q", query)
