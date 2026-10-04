@@ -3,9 +3,12 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   TextField, InputAdornment, Typography, Box, Stack, Skeleton, Paper,
   Chip, Collapse, IconButton, useScrollTrigger, Divider,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { search } from '../api/search';
 import { categories as categoriesApi } from '../api/categories';
 import { useTheme } from '@mui/material/styles';
@@ -32,12 +35,16 @@ function ChipGroup({ title, chips }: {
   );
 }
 
+type SortOption = 'relevance' | 'rating' | 'published';
+
 export default function CatalogPage() {
   const theme = useTheme();
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [type, setType] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortOption>('relevance');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,8 +58,14 @@ export default function CatalogPage() {
   });
 
   const { data, isPending } = useQuery({
-    queryKey: ['search', debouncedQ, type, category],
-    queryFn: () => search.search({ q: debouncedQ, type: type ?? undefined, category: category ?? undefined }),
+    queryKey: ['search', debouncedQ, type, category, sort, order],
+    queryFn: () => search.search({
+      q: debouncedQ,
+      type: type ?? undefined,
+      category: category ?? undefined,
+      sort: sort === 'relevance' ? undefined : sort,
+      order: sort === 'relevance' ? undefined : order,
+    }),
     placeholderData: keepPreviousData,
   });
 
@@ -143,6 +156,37 @@ export default function CatalogPage() {
           <ChipGroup title="Тип" chips={typeChips} />
           <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
           <ChipGroup title="Категория" chips={categoryChips} />
+          <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="overline" sx={{ color: 'text.secondary' }}>Сортировка</Typography>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              aria-label="Сортировка"
+              value={sort}
+              onChange={(_, v) => { if (v !== null) setSort(v); }}
+            >
+              <ToggleButton value="relevance">Популярность</ToggleButton>
+              <ToggleButton value="rating">Рейтинг</ToggleButton>
+              <ToggleButton value="published">Дата</ToggleButton>
+            </ToggleButtonGroup>
+            {sort !== 'relevance' && (
+              <IconButton
+                size="small"
+                aria-label={order === 'desc' ? 'По убыванию' : 'По возрастанию'}
+                onClick={() => setOrder(order === 'desc' ? 'asc' : 'desc')}
+                sx={{
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                  bgcolor: 'background.paper',
+                }}
+              >
+                {order === 'desc'
+                  ? <ArrowDownwardIcon fontSize="small" aria-hidden="true" />
+                  : <ArrowUpwardIcon fontSize="small" aria-hidden="true" />}
+              </IconButton>
+            )}
+          </Stack>
         </Stack>
       </Box>
 

@@ -48,3 +48,25 @@ test('search field triggers query', async () => {
     expect.objectContaining({ q: 'pdf' })
   ));
 });
+
+test('sorting control changes query params', async () => {
+  const { search } = await import('../api/search');
+  renderPage();
+  await screen.findByText('PDF Skill');
+  await userEvent.click(screen.getByRole('button', { name: 'Рейтинг' }));
+  await waitFor(() => expect(search.search).toHaveBeenCalledWith(
+    expect.objectContaining({ sort: 'rating', order: 'desc' })
+  ));
+  await userEvent.click(screen.getByRole('button', { name: 'По убыванию' }));
+  await waitFor(() => expect(search.search).toHaveBeenCalledWith(
+    expect.objectContaining({ sort: 'rating', order: 'asc' })
+  ));
+});
+
+test('direction toggle hidden for popularity sort', async () => {
+  renderPage();
+  await screen.findByText('PDF Skill');
+  expect(screen.queryByRole('button', { name: 'По убыванию' })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Дата' }));
+  expect(screen.getByRole('button', { name: 'По убыванию' })).toBeInTheDocument();
+});
