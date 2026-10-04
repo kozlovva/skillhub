@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TeamsPage from './TeamsPage';
+import { useAuth } from '../auth/KeycloakProvider';
 
 const { getMock, patchMock, deleteMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
@@ -24,7 +25,13 @@ vi.mock('../api/client', () => ({
 }));
 
 vi.mock('../auth/KeycloakProvider', () => ({
-  useAuth: () => ({
+  useAuth: vi.fn(),
+}));
+
+const mockUseAuth = vi.mocked(useAuth);
+
+function setAuth(overrides: Partial<Record<string, unknown>> = {}) {
+  mockUseAuth.mockReturnValue({
     authenticated: true,
     token: 't',
     displayName: 'Owner',
@@ -33,8 +40,9 @@ vi.mock('../auth/KeycloakProvider', () => ({
     teamRoleOf: (slug: string) => (slug === 'platform' ? 'OWNER' : null),
     login: vi.fn(),
     logout: vi.fn(),
-  }),
-}));
+    ...overrides,
+  } as never);
+}
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -58,6 +66,7 @@ const roster = [
 ];
 
 beforeEach(() => {
+  setAuth();
   getMock.mockImplementation((url: string) => {
     if (url === '/api/teams') {
       return Promise.resolve({ data: teams });
@@ -75,19 +84,35 @@ test('renders roster of selected team with role chips', async () => {
   expect(screen.getByText('@petrov')).toBeInTheDocument();
   expect(screen.getAllByText('Владелец').length).toBeGreaterThan(0);
   expect(screen.getByText('@ivanov')).toBeInTheDocument();
-  expect(screen.getAllByText('Участник').length).toBeGreaterThan(0);
 });
 
-test('outsider sees restricted notice instead of roster', async () => {
+test('non-admin sees only own teams in the list', async () => {
+  renderPage();
+  expect(await screen.findByText('Platform')).toBeInTheDocument();
+  expect(screen.queryByText('Other')).not.toBeInTheDocument();
+});
+
+test('search filters teams by name and slug', async () => {
+  setAuth({ isAdmin: true, myTeamRoles: {}, teamRoleOf: () => null });
   const user = userEvent.setup();
   renderPage();
-  await screen.findByText('Пётр Петров');
-  await user.click(screen.getByRole('button', { name: /Other/ }));
-  expect(await screen.findByText('Состав виден только участникам команды')).toBeInTheDocument();
-  expect(getMock).not.toHaveBeenCalledWith('/api/teams/other/members');
+  await screen.findByText('Platform');
+  await user.type(screen.getByPlaceholderText('Поиск команд'), 'plat');
+  expect(screen.queryByText('Other')).not.toBeInTheDocument();
+  expect(screen.getAllByText('Platform').length).toBeGreaterThan(0);
+  await user.clear(screen.getByPlaceholderText('Поиск команд'));
+  await user.type(screen.getByPlaceholderText('Поиск команд'), 'zzz');
+  expect(await screen.findByText('Ничего не найдено')).toBeInTheDocument();
 });
 
-test('role menu offers three roles and calls changeRole', async () => {
+test('outsider with no teams sees empty state', async () => {
+  setAuth({ myTeamRoles: {}, teamRoleOf: () => null });
+  renderPage();
+  expect(await screen.findByText('Вы не состоите ни в одной команде')).toBeInTheDocument();
+  expect(screen.getByText('Выберите команду')).toBeInTheDocument();
+});
+
+test('role menu offers roles and calls changeRole', async () => {
   const user = userEvent.setup();
   patchMock.mockResolvedValue({});
   renderPage();
