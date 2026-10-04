@@ -4,6 +4,7 @@ import com.skillhub.domain.model.ElementVersion;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface ElementVersionRepositoryPort {
@@ -11,4 +12,5 @@ public interface ElementVersionRepositoryPort {
     Optional<ElementVersion> findByElementIdAndVersion(UUID elementId, String version);
     Optional<ElementVersion> findLatestPublished(UUID elementId);
     List<ElementVersion> findAllByElementIdOrderByCreatedAtDesc(UUID elementId);
+    Set<String> findAllS3Keys();
 }

@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -46,5 +48,11 @@ public class JpaElementVersionRepositoryAdapter implements ElementVersionReposit
         return jpa.findAllByElementIdOrderByCreatedAtDesc(elementId).stream()
             .map(ElementVersionJpaMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<String> findAllS3Keys() {
+        return new HashSet<>(jpa.findAllS3Keys());
     }
 }
