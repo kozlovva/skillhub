@@ -11,6 +11,7 @@ import { useThemeMode } from '../theme/ThemeModeProvider';
 
 const navItems = [
   { to: '/', label: 'Каталог' },
+  { to: '/guide', label: 'Инструкция' },
   { to: '/teams', label: 'Команды' },
   { to: '/tokens', label: 'API-токены' },
 ];

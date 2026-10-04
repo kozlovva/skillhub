@@ -56,3 +56,9 @@ test('hides favorites nav item when not authenticated', () => {
   renderLayout();
   expect(screen.queryByRole('link', { name: 'Избранное' })).not.toBeInTheDocument();
 });
+
+test('shows guide nav item for all users', () => {
+  authState.authenticated = false;
+  renderLayout();
+  expect(screen.getByRole('link', { name: 'Инструкция' })).toBeInTheDocument();
+});
