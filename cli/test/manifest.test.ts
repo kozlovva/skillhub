@@ -15,6 +15,7 @@ describe('manifest', () => {
   });
 
   it('collects all problems', () => {
+    expect.assertions(2);
     expect(() => parseManifest({ name: '', version: 'abc', type: 'NOPE' })).toThrow(ManifestError);
     try {
       parseManifest({});
