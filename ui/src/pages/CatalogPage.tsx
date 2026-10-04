@@ -3,12 +3,13 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   TextField, InputAdornment, Typography, Box, Stack, Skeleton, Paper,
   Chip, Collapse, IconButton, useScrollTrigger, Divider,
-  ToggleButton, ToggleButtonGroup,
+  Button, Menu, MenuItem, ListItemIcon,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import CheckIcon from '@mui/icons-material/Check';
 import { search } from '../api/search';
 import { categories as categoriesApi } from '../api/categories';
 import { useTheme } from '@mui/material/styles';
@@ -37,6 +38,12 @@ function ChipGroup({ title, chips }: {
 
 type SortOption = 'relevance' | 'rating' | 'published';
 
+const sortLabels: Record<SortOption, string> = {
+  relevance: 'Популярность',
+  rating: 'Рейтинг',
+  published: 'Дата',
+};
+
 export default function CatalogPage() {
   const theme = useTheme();
   const [q, setQ] = useState('');
@@ -45,6 +52,7 @@ export default function CatalogPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortOption>('relevance');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,10 +142,85 @@ export default function CatalogPage() {
                     <SearchIcon sx={{ color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      aria-haspopup="menu"
+                      aria-expanded={sortAnchor ? 'true' : undefined}
+                      aria-label="Настройка сортировки"
+                      endIcon={sort !== 'relevance' ? (
+                        order === 'desc'
+                          ? <ArrowDownwardIcon aria-hidden="true" />
+                          : <ArrowUpwardIcon aria-hidden="true" />
+                      ) : undefined}
+                      onClick={(e) => setSortAnchor(e.currentTarget)}
+                      sx={{ minWidth: 0 }}
+                    >
+                      {sortLabels[sort]}
+                    </Button>
+                  </InputAdornment>
+                ),
               },
             }}
           />
         </Collapse>
+        <Menu
+          anchorEl={sortAnchor}
+          open={sortAnchor !== null}
+          onClose={() => setSortAnchor(null)}
+        >
+          <MenuItem
+            selected={sort === 'relevance'}
+            onClick={() => { setSort('relevance'); setSortAnchor(null); }}
+          >
+            {sort === 'relevance' && (
+              <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+            )}
+            Популярность
+          </MenuItem>
+          <MenuItem
+            selected={sort === 'rating'}
+            onClick={() => { setSort('rating'); setSortAnchor(null); }}
+          >
+            {sort === 'rating' && (
+              <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+            )}
+            Рейтинг
+          </MenuItem>
+          <MenuItem
+            selected={sort === 'published'}
+            onClick={() => { setSort('published'); setSortAnchor(null); }}
+          >
+            {sort === 'published' && (
+              <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+            )}
+            Дата
+          </MenuItem>
+          {sort !== 'relevance' && <Divider />}
+          {sort !== 'relevance' && (
+            <MenuItem
+              selected={order === 'desc'}
+              onClick={() => { setOrder('desc'); setSortAnchor(null); }}
+            >
+              {order === 'desc' && (
+                <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+              )}
+              По убыванию
+            </MenuItem>
+          )}
+          {sort !== 'relevance' && (
+            <MenuItem
+              selected={order === 'asc'}
+              onClick={() => { setOrder('asc'); setSortAnchor(null); }}
+            >
+              {order === 'asc' && (
+                <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+              )}
+              По возрастанию
+            </MenuItem>
+          )}
+        </Menu>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           {scrolled && (
             <IconButton
@@ -156,37 +239,6 @@ export default function CatalogPage() {
           <ChipGroup title="Тип" chips={typeChips} />
           <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
           <ChipGroup title="Категория" chips={categoryChips} />
-          <Divider orientation="vertical" flexItem sx={{ mx: 1, alignSelf: 'stretch', my: 0.5 }} />
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="overline" sx={{ color: 'text.secondary' }}>Сортировка</Typography>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              aria-label="Сортировка"
-              value={sort}
-              onChange={(_, v) => { if (v !== null) setSort(v); }}
-            >
-              <ToggleButton value="relevance">Популярность</ToggleButton>
-              <ToggleButton value="rating">Рейтинг</ToggleButton>
-              <ToggleButton value="published">Дата</ToggleButton>
-            </ToggleButtonGroup>
-            {sort !== 'relevance' && (
-              <IconButton
-                size="small"
-                aria-label={order === 'desc' ? 'По убыванию' : 'По возрастанию'}
-                onClick={() => setOrder(order === 'desc' ? 'asc' : 'desc')}
-                sx={{
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 1,
-                  bgcolor: 'background.paper',
-                }}
-              >
-                {order === 'desc'
-                  ? <ArrowDownwardIcon fontSize="small" aria-hidden="true" />
-                  : <ArrowUpwardIcon fontSize="small" aria-hidden="true" />}
-              </IconButton>
-            )}
-          </Stack>
         </Stack>
       </Box>
 

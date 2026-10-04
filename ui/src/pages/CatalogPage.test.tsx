@@ -53,20 +53,32 @@ test('sorting control changes query params', async () => {
   const { search } = await import('../api/search');
   renderPage();
   await screen.findByText('PDF Skill');
-  await userEvent.click(screen.getByRole('button', { name: 'Рейтинг' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Настройка сортировки' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Рейтинг' }));
   await waitFor(() => expect(search.search).toHaveBeenCalledWith(
     expect.objectContaining({ sort: 'rating', order: 'desc' })
   ));
-  await userEvent.click(screen.getByRole('button', { name: 'По убыванию' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Настройка сортировки' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'По возрастанию' }));
   await waitFor(() => expect(search.search).toHaveBeenCalledWith(
     expect.objectContaining({ sort: 'rating', order: 'asc' })
   ));
 });
 
-test('direction toggle hidden for popularity sort', async () => {
+test('direction items hidden for popularity sort', async () => {
   renderPage();
   await screen.findByText('PDF Skill');
-  expect(screen.queryByRole('button', { name: 'По убыванию' })).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole('button', { name: 'Дата' }));
-  expect(screen.getByRole('button', { name: 'По убыванию' })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Настройка сортировки' }));
+  expect(await screen.findByRole('menuitem', { name: 'Популярность' })).toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', { name: 'По убыванию' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', { name: 'По возрастанию' })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Дата' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Настройка сортировки' }));
+  expect(await screen.findByRole('menuitem', { name: 'По убыванию' })).toBeInTheDocument();
+  expect(screen.getByRole('menuitem', { name: 'По возрастанию' })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Популярность' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Настройка сортировки' }));
+  await screen.findByRole('menuitem', { name: 'Популярность' });
+  expect(screen.queryByRole('menuitem', { name: 'По убыванию' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', { name: 'По возрастанию' })).not.toBeInTheDocument();
 });
