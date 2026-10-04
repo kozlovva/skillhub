@@ -44,7 +44,10 @@ export default function ElementPage() {
     queryKey: ['element', slug],
     queryFn: () => elements.get(slug!),
   });
-  const canPublish = isAdmin || ['OWNER', 'MAINTAINER'].includes(teamRoleOf(element?.team ?? '') ?? '');
+  const canPublish =
+    isAdmin
+    || (element != null && element.team == null)
+    || ['OWNER', 'MAINTAINER'].includes(teamRoleOf(element?.team ?? '') ?? '');
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],

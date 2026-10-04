@@ -5,7 +5,7 @@ export interface ElementResponse {
   type: ElementType;
   name: string;
   description: string;
-  team: string;
+  team: string | null;
   category: string | null;
   tags: string[];
   visibility: 'PUBLIC' | 'TEAM';

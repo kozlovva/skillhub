@@ -56,7 +56,7 @@ export default function UploadPage() {
           type,
           name,
           description: description || undefined,
-          team,
+          team: team || undefined,
           category: category || undefined,
           tags,
           visibility,
@@ -85,7 +85,8 @@ export default function UploadPage() {
   if (!authenticated) return <Navigate to="/" replace />;
 
   const canSubmit =
-    !!name.trim() && SLUG_PATTERN.test(slug) && !!type && !!team && !!visibility && !!file;
+    !!name.trim() && SLUG_PATTERN.test(slug) && !!type
+    && (!team || !!visibility) && !!file;
   const slugInvalid = slug.length > 0 && !SLUG_PATTERN.test(slug);
 
   const handleSubmit = () => {
@@ -141,10 +142,14 @@ export default function UploadPage() {
             select
             label="Команда"
             value={team}
-            required
             sx={{ minWidth: 200 }}
-            onChange={(e) => setTeam(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setTeam(next);
+              if (!next) setVisibility('PUBLIC');
+            }}
           >
+            <MenuItem value="">Без команды</MenuItem>
             {(meInfo?.teams ?? []).map((t) => (
               <MenuItem key={t.slug} value={t.slug}>{t.name}</MenuItem>
             ))}
@@ -153,12 +158,12 @@ export default function UploadPage() {
             select
             label="Видимость"
             value={visibility}
-            required
+            required={!!team}
             sx={{ minWidth: 220 }}
             onChange={(e) => setVisibility(e.target.value as 'PUBLIC' | 'TEAM')}
           >
             <MenuItem value="PUBLIC">PUBLIC — доступен всем</MenuItem>
-            <MenuItem value="TEAM">TEAM — только команде</MenuItem>
+            <MenuItem value="TEAM" disabled={!team}>TEAM — только команде</MenuItem>
           </TextField>
         </Stack>
         <TextField

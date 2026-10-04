@@ -47,7 +47,7 @@ export default function ElementCard({ element, avgRating, ratingCount, categoryN
         <Stack direction="row" spacing={2} alignItems="center" sx={{ color: 'text.secondary' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <GroupsIcon sx={{ fontSize: 16 }} />
-            <Typography variant="caption">{element.team}</Typography>
+            <Typography variant="caption">{element.team ?? 'Личный'}</Typography>
           </Box>
           {element.latestVersion && (
             <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>

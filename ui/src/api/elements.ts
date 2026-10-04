@@ -10,7 +10,7 @@ export const elements = {
   },
   async create(body: {
     slug: string; type: string; name: string; description?: string;
-    team: string; category?: string; tags?: string[]; visibility: string;
+    team?: string; category?: string; tags?: string[]; visibility: string;
   }): Promise<ElementResponse> {
     return (await api.post<ElementResponse>('/api/elements', body)).data;
   },

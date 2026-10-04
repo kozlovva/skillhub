@@ -152,6 +152,41 @@ test('shows snackbar with api message on non-409 publish error', async () => {
   expect(screen.queryByText(/уже существует/i)).not.toBeInTheDocument();
 });
 
+test('team can be cleared after selection', async () => {
+  renderPage();
+  await userEvent.click(await screen.findByLabelText('Команда'));
+  await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
+  await userEvent.click(screen.getByLabelText('Команда'));
+  await userEvent.click(await screen.findByRole('option', { name: 'Без команды' }));
+  await userEvent.type(await screen.findByLabelText(/^Название/), 'Solo');
+  await userEvent.click(screen.getByLabelText(/^Тип/));
+  await userEvent.click(await screen.findByRole('option', { name: 'SCRIPT' }));
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    new File(['data'], 'element.zip', { type: 'application/zip' })
+  );
+  await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
+  await waitFor(() => expect(createMock).toHaveBeenCalled());
+  expect(createMock.mock.calls[0][0].team).toBeUndefined();
+  expect(createMock.mock.calls[0][0].visibility).toBe('PUBLIC');
+});
+
+test('TEAM visibility is disabled without a team', async () => {
+  renderPage();
+  await userEvent.click(await screen.findByLabelText('Видимость'));
+  expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
+    .toHaveAttribute('aria-disabled', 'true');
+});
+
+test('selecting a team enables TEAM visibility', async () => {
+  renderPage();
+  await userEvent.click(await screen.findByLabelText('Команда'));
+  await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
+  await userEvent.click(screen.getByLabelText(/^Видимость/));
+  expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
+    .not.toHaveAttribute('aria-disabled', 'true');
+});
+
 test('publish 409 shows publish-step snackbar and no slug error', async () => {
   publishMock.mockRejectedValue({ status: 409 });
   renderPage();
