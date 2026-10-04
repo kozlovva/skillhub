@@ -45,10 +45,12 @@ export default function UploadPage() {
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
 
   const createdRef = useRef<Set<string>>(new Set());
+  const stepRef = useRef<'create' | 'publish'>('create');
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!createdRef.current.has(slug)) {
+        stepRef.current = 'create';
         await elementsApi.create({
           slug,
           type,
@@ -61,6 +63,7 @@ export default function UploadPage() {
         });
         createdRef.current.add(slug);
       }
+      stepRef.current = 'publish';
       return elementsApi.publishVersion(slug, file as File, changelog || undefined);
     },
     onSuccess: () => {
@@ -69,7 +72,9 @@ export default function UploadPage() {
     },
     onError: (e) => {
       const err = toApiError(e);
-      if (err.status === 409) {
+      if (stepRef.current === 'publish') {
+        showError(`Элемент создан, но не удалось загрузить версию: ${err.message}`);
+      } else if (err.status === 409) {
         setSlugError('Элемент с таким slug уже существует');
       } else {
         showError(err.message);
@@ -111,6 +116,7 @@ export default function UploadPage() {
           onChange={(e) => {
             setSlugTouched(true);
             setSlug(e.target.value);
+            setSlugError(null);
           }}
           error={!!slugError || slugInvalid}
           helperText={

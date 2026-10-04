@@ -1,8 +1,9 @@
-﻿import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UploadPage from './UploadPage';
+import { SnackbarProvider } from '../layout/SnackbarContext';
 
 const { createMock, publishMock, meMock, categoriesMock } = vi.hoisted(() => ({
   createMock: vi.fn(),
@@ -41,10 +42,12 @@ function renderPage() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/upload']}>
-        <Routes>
-          <Route path="/upload" element={<UploadPage />} />
-          <Route path="/elements/:slug" element={<div>element-page</div>} />
-        </Routes>
+        <SnackbarProvider>
+          <Routes>
+            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/elements/:slug" element={<div>element-page</div>} />
+          </Routes>
+        </SnackbarProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -137,4 +140,26 @@ test('shows slug field error on 409 conflict', async () => {
 
   expect(await screen.findByText(/уже существует/i)).toBeInTheDocument();
   expect(publishMock).not.toHaveBeenCalled();
+});
+
+test('shows snackbar with api message on non-409 publish error', async () => {
+  publishMock.mockRejectedValue(Object.assign(new Error('Некорректный файл'), { status: 400 }));
+  renderPage();
+  await fillForm();
+  await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
+
+  expect(await screen.findByText(/Некорректный файл/)).toBeInTheDocument();
+  expect(screen.queryByText(/уже существует/i)).not.toBeInTheDocument();
+});
+
+test('publish 409 shows publish-step snackbar and no slug error', async () => {
+  publishMock.mockRejectedValue({ status: 409 });
+  renderPage();
+  await fillForm();
+  await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
+
+  expect(
+    await screen.findByText(/Элемент создан, но не удалось загрузить версию/)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/уже существует/i)).not.toBeInTheDocument();
 });
