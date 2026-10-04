@@ -48,7 +48,6 @@ export default function TeamsPage() {
             isMember={isAdmin || myTeamRoles[selectedTeam.slug] != null}
             canManage={isAdmin || myTeamRoles[selectedTeam.slug] === 'OWNER'}
             ownRoleLabel={ownRoleLabel}
-            isAdmin={isAdmin}
           />
         ) : (
           <Paper sx={{ p: 3, flex: 1, width: '100%' }} data-testid="team-detail">

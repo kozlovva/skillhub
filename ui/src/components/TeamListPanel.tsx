@@ -84,6 +84,7 @@ export default function TeamListPanel({
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 2 }}
           slotProps={{
+            htmlInput: { 'aria-label': 'Поиск команд' },
             input: {
               startAdornment: (
                 <InputAdornment position="start">

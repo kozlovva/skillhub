@@ -30,7 +30,6 @@ interface TeamMembersPanelProps {
   isMember: boolean;
   canManage: boolean;
   ownRoleLabel: string | null;
-  isAdmin: boolean;
 }
 
 export default function TeamMembersPanel({
