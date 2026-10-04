@@ -88,4 +88,17 @@ describe('runPublish', () => {
     const dir = makeDir({ name: 'X', version: '1.0.0', type: 'SKILL' });
     await expect(runPublish(dir, { url: 'http://x' }, {})).rejects.toThrow(/login/);
   });
+
+  it('json output is pure', async () => {
+    const dir = makeDir({ name: 'PDF Export', version: '1.0.0', type: 'SKILL', changelog: 'first' });
+    const client = {
+      getElement: vi.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'no')),
+      createElement: vi.fn().mockResolvedValue({ slug: 'pdf-export' }),
+      publishVersion: vi.fn().mockResolvedValue({ version: '1.0.0' }),
+    };
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await runPublish(dir, cfg, { client: client as never, json: true });
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(log.mock.calls[0][0] as string)).toEqual(result);
+  });
 });

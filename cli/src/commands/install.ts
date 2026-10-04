@@ -79,7 +79,9 @@ export async function runInstall(
   const lock = readLockfile(cwd);
   const decision = decideVersion(lock, slug, version, opts.force ?? false);
   if (decision.action === 'already' && !opts.force) {
-    console.log(`${slug}@${version} is already installed (use --force to reinstall)`);
+    if (!opts.json) {
+      console.log(`${slug}@${version} is already installed (use --force to reinstall)`);
+    }
     return { slug, version, action: 'already', targets: [] };
   }
 
@@ -108,7 +110,7 @@ export async function runInstall(
     mkdirSync(dest, { recursive: true });
     extractArchive(bytes, dest);
     installed.push(dest);
-    console.log(`Installed ${slug}@${version} → ${dest}`);
+    if (!opts.json) console.log(`Installed ${slug}@${version} → ${dest}`);
   }
 
   const entry: LockFile['packages'][string] = { version, installedAt: new Date().toISOString() };
@@ -117,10 +119,10 @@ export async function runInstall(
     packages: { ...lock.packages, [slug]: entry },
   });
 
-  if (decision.action === 'update' && !opts.json) {
+  if (decision.action === 'update' && decision.from !== version && !opts.json) {
     console.log(`Updated ${slug}: ${decision.from} → ${version}`);
   }
-  return { slug, version, action: decision.action === 'already' ? 'install' : decision.action, targets: installed };
+  return { slug, version, action: decision.action, targets: installed };
 }
 
 export function register(program: Command): void {

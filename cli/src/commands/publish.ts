@@ -12,6 +12,7 @@ export function zipDirectory(dir: string): Buffer {
 
 export interface PublishDeps {
   client?: ApiClient;
+  json?: boolean;
 }
 
 export async function runPublish(
@@ -19,6 +20,7 @@ export async function runPublish(
   cfg: SkillhubConfig,
   deps: PublishDeps = {},
 ): Promise<{ slug: string; version: string }> {
+  const json = deps.json ?? false;
   if (!cfg.token) {
     throw new Error('Not logged in. Run `skillhub login` or set SKILLHUB_TOKEN.');
   }
@@ -45,7 +47,7 @@ export async function runPublish(
         tags: manifest.tags,
         visibility: manifest.visibility ?? 'PUBLIC',
       });
-      console.log(`Created element ${slug}`);
+      if (!json) console.log(`Created element ${slug}`);
     } else {
       throw e;
     }
@@ -53,7 +55,8 @@ export async function runPublish(
 
   const zip = zipDirectory(dir);
   await client.publishVersion(slug, zip, manifest.changelog);
-  console.log(`Published ${slug}@${manifest.version}`);
+  if (!json) console.log(`Published ${slug}@${manifest.version}`);
+  if (json) console.log(JSON.stringify({ slug, version: manifest.version }, null, 2));
   return { slug, version: manifest.version };
 }
 
@@ -64,7 +67,6 @@ export function register(program: Command): void {
     .argument('<dir>', 'directory containing manifest.json')
     .option('--json', 'machine-readable output')
     .action(async (dir: string, opts: { json?: boolean }) => {
-      const result = await runPublish(dir, resolveConfig());
-      if (opts.json) console.log(JSON.stringify(result, null, 2));
+      await runPublish(dir, resolveConfig(), { json: opts.json });
     });
 }

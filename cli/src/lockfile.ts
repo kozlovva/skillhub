@@ -11,8 +11,6 @@ export interface LockFile {
   packages: Record<string, LockEntry>;
 }
 
-const EMPTY: LockFile = { packages: {} };
-
 export function readLockfile(root: string): LockFile {
   const path = join(root, 'skillhub.lock');
   if (!existsSync(path)) return { packages: {} };

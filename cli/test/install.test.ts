@@ -113,4 +113,50 @@ describe('runInstall', () => {
     const second = await runInstall('pdf-export', {}, cfg, deps);
     expect(second.action).toBe('already');
   });
+
+  it('json output is pure on install path', async () => {
+    const bytes = zipWith({ 'SKILL.md': '# skill' });
+    const client = {
+      getElement: vi.fn().mockResolvedValue({ slug: 'pdf-export', type: 'SKILL', name: 'PDF', visibility: 'PUBLIC', downloadsCount: 0, latestVersion: '1.0.0' }),
+      downloadElementArchive: vi.fn().mockResolvedValue(bytes),
+      downloadPackArchive: vi.fn(),
+    };
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await runInstall('pdf-export', { json: true }, cfg, {
+      client: client as never,
+      picker: (targets) => [targets[0]],
+    });
+    expect(log).not.toHaveBeenCalled();
+    expect(result.action).toBe('install');
+  });
+
+  it('json output is pure on already-installed path', async () => {
+    const bytes = zipWith({ 'SKILL.md': '# skill' });
+    const client = {
+      getElement: vi.fn().mockResolvedValue({ slug: 'pdf-export', type: 'SKILL', name: 'PDF', visibility: 'PUBLIC', downloadsCount: 0, latestVersion: '1.0.0' }),
+      downloadElementArchive: vi.fn().mockResolvedValue(bytes),
+      downloadPackArchive: vi.fn(),
+    };
+    const deps = { client: client as never, picker: (targets: unknown[]) => [targets[0]] };
+    await runInstall('pdf-export', {}, cfg, deps);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await runInstall('pdf-export', { json: true }, cfg, deps);
+    expect(result.action).toBe('already');
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('force reinstall of same version does not print Updated line', async () => {
+    const bytes = zipWith({ 'SKILL.md': '# skill' });
+    const client = {
+      getElement: vi.fn().mockResolvedValue({ slug: 'pdf-export', type: 'SKILL', name: 'PDF', visibility: 'PUBLIC', downloadsCount: 0, latestVersion: '1.0.0' }),
+      downloadElementArchive: vi.fn().mockResolvedValue(bytes),
+      downloadPackArchive: vi.fn(),
+    };
+    const deps = { client: client as never, picker: (targets: unknown[]) => [targets[0]] };
+    await runInstall('pdf-export', {}, cfg, deps);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await runInstall('pdf-export', { force: true }, cfg, deps);
+    expect(result.action).toBe('update');
+    expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Updated'));
+  });
 });
