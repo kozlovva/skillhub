@@ -110,6 +110,34 @@ class PackUseCaseTest {
     }
 
     @Test
+    void personalPackContentManagedByAuthor() {
+        Element personalPack = Element.builder().id(UUID.randomUUID()).slug("my-pack")
+            .type(ElementType.PACK).name("my-pack").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elementUseCase.getBySlug("my-pack", owner)).thenReturn(personalPack);
+        when(elementUseCase.getBySlug("skill-a", owner)).thenReturn(skillElement());
+
+        PackContent content = useCase.addContent("my-pack", "skill-a", "1.0.0", owner);
+        assertThat(content.getPackElement().getSlug()).isEqualTo("my-pack");
+    }
+
+    @Test
+    void personalPackContentForbiddenForNonAuthor() {
+        User other = User.builder().id(UUID.randomUUID()).ssoSubject("s2").email("e2")
+            .displayName("Other").admin(false).createdAt(Instant.now()).build();
+        Element personalPack = Element.builder().id(UUID.randomUUID()).slug("my-pack")
+            .type(ElementType.PACK).name("my-pack").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elementUseCase.getBySlug("my-pack", other)).thenReturn(personalPack);
+
+        assertThatThrownBy(() -> useCase.addContent("my-pack", "skill-a", "1.0.0", other))
+            .isInstanceOf(ForbiddenException.class)
+            .isNotInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void downloadPackBuildsZipWithManifestAndElements() throws Exception {
         Element pack = packElement();
         Element skill = skillElement();

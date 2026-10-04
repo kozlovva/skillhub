@@ -50,7 +50,9 @@ public class PackUseCase {
         if (elementSlug.equals(packSlug)) {
             throw new UnprocessableException("Pack cannot contain itself: " + packSlug, null);
         }
-        if (!access.canPublish(pack.getTeam(), user)) {
+        if (pack.getTeam() != null
+                ? !access.canPublish(pack.getTeam(), user)
+                : !access.canPublishPersonal(pack, user)) {
             throw new ForbiddenException("Only OWNER/MAINTAINER can modify this pack");
         }
         Element element = elementUseCase.getBySlug(elementSlug, user);
