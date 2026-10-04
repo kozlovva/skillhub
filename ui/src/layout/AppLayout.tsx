@@ -6,6 +6,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import UploadIcon from '@mui/icons-material/Upload';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useAuth } from '../auth/KeycloakProvider';
 import { useThemeMode } from '../theme/ThemeModeProvider';
 
@@ -52,7 +53,6 @@ export default function AppLayout() {
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {[
               ...navItems,
-              ...(authenticated ? [{ to: '/favorites', label: 'Избранное' }] : []),
               ...(isAdmin ? adminNavItems : []),
               { to: '/guide', label: 'Инструкция' },
             ].map((item) => (
@@ -95,6 +95,21 @@ export default function AppLayout() {
             </Button>
           )}
           <Box sx={{ flexGrow: 1 }} />
+          {authenticated && (
+            <IconButton
+              component={RouterLink}
+              to="/favorites"
+              aria-label="Избранное"
+              title="Избранное"
+              sx={{
+                mr: 1,
+                color: '#9b968c',
+                '&:hover': { backgroundColor: '#23272d', color: '#ece9e2' },
+              }}
+            >
+              <FavoriteIcon />
+            </IconButton>
+          )}
           <IconButton
             onClick={toggleMode}
             aria-label={mode === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}

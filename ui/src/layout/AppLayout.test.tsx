@@ -51,6 +51,16 @@ test('shows favorites nav item when authenticated', () => {
   expect(screen.getByRole('link', { name: 'Избранное' })).toBeInTheDocument();
 });
 
+test('renders favorites as icon link in the right cluster, after menu', () => {
+  authState.authenticated = true;
+  renderLayout();
+  const fav = screen.getByRole('link', { name: 'Избранное' });
+  expect(fav.querySelector('svg')).toBeInTheDocument();
+  const links = screen.getAllByRole('link');
+  const guide = screen.getByRole('link', { name: 'Инструкция' });
+  expect(links.indexOf(fav)).toBeGreaterThan(links.indexOf(guide));
+});
+
 test('hides favorites nav item when not authenticated', () => {
   authState.authenticated = false;
   renderLayout();
