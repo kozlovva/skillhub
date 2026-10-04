@@ -148,7 +148,7 @@ export default function CatalogPage() {
                       size="small"
                       aria-haspopup="menu"
                       aria-expanded={sortAnchor ? 'true' : undefined}
-                      aria-label="Настройка сортировки"
+                      aria-label={`Настройка сортировки: ${sortLabels[sort]}`}
                       endIcon={sort !== 'relevance' ? (
                         order === 'desc'
                           ? <ArrowDownwardIcon aria-hidden="true" />
