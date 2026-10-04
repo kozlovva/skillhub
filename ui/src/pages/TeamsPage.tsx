@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, TextField, Button,
-  MenuItem, Stack, Divider,
+  MenuItem, Stack, Divider, Autocomplete,
 } from '@mui/material';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import { teams as teamsApi } from '../api/teams';
 import { toApiError } from '../api/client';
+import type { MemberCandidate } from '../types';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
 import PageHeader from '../components/PageHeader';
@@ -20,10 +21,23 @@ export default function TeamsPage() {
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
   const [memberTeam, setMemberTeam] = useState('');
-  const [memberSubject, setMemberSubject] = useState('');
+  const [memberUser, setMemberUser] = useState<MemberCandidate | null>(null);
+  const [memberQuery, setMemberQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [memberRole, setMemberRole] = useState('MEMBER');
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(memberQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [memberQuery]);
+
   const { data: teams } = useQuery({ queryKey: ['teams'], queryFn: teamsApi.list });
+
+  const { data: candidates } = useQuery({
+    queryKey: ['member-candidates', memberTeam, debouncedQuery],
+    queryFn: () => teamsApi.searchCandidates(memberTeam, debouncedQuery),
+    enabled: !!memberTeam && debouncedQuery.length >= 2,
+  });
 
   const canAddMembers = isAdmin || Object.values(myTeamRoles).includes('OWNER');
   const manageableTeams = isAdmin ? (teams ?? []) : (teams ?? []).filter((t) => teamRoleOf(t.slug) === 'OWNER');
@@ -39,10 +53,11 @@ export default function TeamsPage() {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: () => teamsApi.addMember(memberTeam, memberSubject, memberRole),
+    mutationFn: () => teamsApi.addMember(memberTeam, memberUser!.userId, memberRole),
     onSuccess: () => {
       showSuccess('Участник добавлен');
-      setMemberSubject('');
+      setMemberUser(null);
+      setMemberQuery('');
       qc.invalidateQueries({ queryKey: ['teams'] });
     },
     onError: (e) => showError(toApiError(e).message),
@@ -109,8 +124,21 @@ export default function TeamsPage() {
                 <MenuItem key={t.slug} value={t.slug}>{t.slug}</MenuItem>
               ))}
             </TextField>
-            <TextField label="SSO subject" value={memberSubject}
-              onChange={(e) => setMemberSubject(e.target.value)} sx={{ width: 220 }} />
+            <Autocomplete
+              sx={{ width: 260 }}
+              options={candidates ?? []}
+              value={memberUser}
+              onChange={(_, v) => setMemberUser(v)}
+              onInputChange={(_, v) => setMemberQuery(v)}
+              getOptionLabel={(o) => `${o.displayName} (${o.username})`}
+              isOptionEqualToValue={(o, v) => o.userId === v.userId}
+              filterOptions={(o) => o}
+              freeSolo={false}
+              renderInput={(params) => (
+                <TextField {...params} label="Пользователь"
+                  placeholder="Начните вводить имя или логин" />
+              )}
+            />
             <TextField select label="Роль" value={memberRole}
               onChange={(e) => setMemberRole(e.target.value)} sx={{ width: 140 }}>
               <MenuItem value="OWNER">Владелец</MenuItem>
@@ -118,7 +146,7 @@ export default function TeamsPage() {
               <MenuItem value="MEMBER">Участник</MenuItem>
             </TextField>
             <Button variant="contained" onClick={() => addMemberMutation.mutate()}
-              disabled={!memberTeam || !memberSubject.trim()}>
+              disabled={!memberTeam || !memberUser}>
               Добавить
             </Button>
           </Stack>

@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { TeamResponse } from '../types';
+import type { TeamResponse, MemberCandidate } from '../types';
 
 export const teams = {
   async list(): Promise<TeamResponse[]> {
@@ -8,7 +8,10 @@ export const teams = {
   async create(body: { slug: string; name: string }): Promise<TeamResponse> {
     return (await api.post<TeamResponse>('/api/teams', body)).data;
   },
-  async addMember(slug: string, ssoSubject: string, role: string): Promise<void> {
-    await api.post(`/api/teams/${slug}/members`, { ssoSubject, role });
+  async searchCandidates(slug: string, q: string): Promise<MemberCandidate[]> {
+    return (await api.get<MemberCandidate[]>(`/api/teams/${slug}/member-candidates`, { params: { q } })).data;
+  },
+  async addMember(slug: string, userId: string, role: string): Promise<void> {
+    await api.post(`/api/teams/${slug}/members`, { userId, role });
   },
 };

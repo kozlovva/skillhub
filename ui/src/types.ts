@@ -76,3 +76,10 @@ export interface ApiError {
   message: string;
   details: unknown;
 }
+
+export interface MemberCandidate {
+  userId: string;
+  username: string;
+  displayName: string;
+}
+
