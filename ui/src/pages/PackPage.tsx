@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Typography, Paper, Button, Table, TableHead, TableRow,
+  Paper, Button, Table, TableHead, TableRow,
   TableCell, TableBody, Chip, Stack, Box,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -13,6 +13,7 @@ import { downloadFile, toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
 import AddToPackDialog from '../components/AddToPackDialog';
+import PageHeader from '../components/PageHeader';
 
 export default function PackPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -49,14 +50,14 @@ export default function PackPage() {
   if (!pack) return null;
 
   return (
-    <Paper sx={{ p: 3, }}>
+    <Stack spacing={3}>
+      <PageHeader
+        title={`Пак: ${pack.slug}`}
+        subtitle={`${pack.contents.length} элементов`}
+      />
+      <Paper sx={{ p: 3 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" component="h1">
-            Пак: <Typography variant="inherit" component="span">{pack.slug}</Typography>
-          </Typography>
-          <Typography color="text.secondary">{pack.contents.length} элементов</Typography>
-        </Box>
+        <Box sx={{ flexGrow: 1 }} />
         {authenticated && (
           <Button variant="contained" startIcon={<LibraryAddIcon />} onClick={() => setDialogOpen(true)}>
             Добавить элемент
@@ -101,6 +102,7 @@ export default function PackPage() {
           onAdd={(element, constraint) => addMutation.mutate({ element, constraint })}
         />
       )}
-    </Paper>
+      </Paper>
+    </Stack>
   );
 }

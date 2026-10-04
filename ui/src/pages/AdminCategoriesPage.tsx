@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, List, ListItem, ListItemText, TextField, Button, Stack, Avatar,
 } from '@mui/material';
-import CategoryIcon from '@mui/icons-material/Category';
 import { categories as categoriesApi } from '../api/categories';
 import { toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
+import PageHeader from '../components/PageHeader';
 
 export default function AdminCategoriesPage() {
   const qc = useQueryClient();
@@ -32,12 +32,10 @@ export default function AdminCategoriesPage() {
   });
 
   return (
-    <Paper sx={{ p: 3, }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-        <CategoryIcon sx={{ color: 'primary.main' }} />
-        <Typography variant="h4" component="h1">Категории</Typography>
-      </Stack>
-      <List disablePadding sx={{ mb: 2 }}>
+    <Stack spacing={3}>
+      <PageHeader title="Категории" />
+      <Paper sx={{ p: 3 }}>
+        <List disablePadding sx={{ mb: 2 }}>
         {(categories ?? []).map((c) => (
           <ListItem key={c.slug} disableGutters sx={{ py: 0.75 }}>
             <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', mr: 2, width: 36, height: 36 }}>
@@ -49,27 +47,28 @@ export default function AdminCategoriesPage() {
             />
           </ListItem>
         ))}
-      </List>
-      {isAdmin ? (
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <TextField label="slug" value={slug}
-            onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
-          <TextField label="Название" value={name}
-            onChange={(e) => setName(e.target.value)} sx={{ width: 200 }} />
-          <TextField label="Родитель (slug)" value={parentSlug}
-            onChange={(e) => setParentSlug(e.target.value)} sx={{ width: 200 }} />
-          <Button variant="contained" onClick={() => createMutation.mutate()}
-            disabled={!slug.trim() || !name.trim()}>
-            Создать
-          </Button>
-        </Stack>
-      ) : (
-        <Typography color="text.secondary">
-          {authenticated
-            ? 'Управлять категориями могут только администраторы'
-            : 'Войдите под учётной записью администратора'}
-        </Typography>
-      )}
-    </Paper>
+        </List>
+        {isAdmin ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <TextField label="slug" value={slug}
+              onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
+            <TextField label="Название" value={name}
+              onChange={(e) => setName(e.target.value)} sx={{ width: 200 }} />
+            <TextField label="Родитель (slug)" value={parentSlug}
+              onChange={(e) => setParentSlug(e.target.value)} sx={{ width: 200 }} />
+            <Button variant="contained" onClick={() => createMutation.mutate()}
+              disabled={!slug.trim() || !name.trim()}>
+              Создать
+            </Button>
+          </Stack>
+        ) : (
+          <Typography color="text.secondary">
+            {authenticated
+              ? 'Управлять категориями могут только администраторы'
+              : 'Войдите под учётной записью администратора'}
+          </Typography>
+        )}
+      </Paper>
+    </Stack>
   );
 }

@@ -45,7 +45,7 @@ function renderPage() {
 
 test('shows pack contents and download button', async () => {
   renderPage();
-  expect(await screen.findByText('my-pack')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Пак: my-pack' })).toBeInTheDocument();
   expect(screen.getByText('pdf-skill')).toBeInTheDocument();
   expect(screen.getByText('1.0.0')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Скачать пак' })).toBeInTheDocument();

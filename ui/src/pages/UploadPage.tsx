@@ -11,6 +11,7 @@ import { me as meApi } from '../api/me';
 import { toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
 import { useAuth } from '../auth/KeycloakProvider';
+import PageHeader from '../components/PageHeader';
 import type { ElementType } from '../types';
 
 const ELEMENT_TYPES: ElementType[] = ['SKILL', 'SCRIPT', 'AGENT', 'HOOK', 'PACK', 'OTHER'];
@@ -97,12 +98,10 @@ export default function UploadPage() {
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 720 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-        <UploadIcon sx={{ color: 'primary.main' }} />
-        <Typography variant="h4" component="h1">Загрузить элемент</Typography>
-      </Stack>
-      <Stack spacing={2}>
+    <Stack spacing={3}>
+      <PageHeader title="Загрузить элемент" />
+      <Paper sx={{ p: 3, maxWidth: 720 }}>
+        <Stack spacing={2}>
         <TextField
           label="Название"
           value={name}
@@ -273,7 +272,8 @@ export default function UploadPage() {
             Опубликовать
           </Button>
         </Box>
-      </Stack>
-    </Paper>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }

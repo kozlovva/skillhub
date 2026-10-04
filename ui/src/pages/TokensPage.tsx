@@ -4,10 +4,10 @@ import {
   Typography, Paper, Table, TableHead, TableRow, TableCell, TableBody,
   Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Stack, Box,
 } from '@mui/material';
-import KeyIcon from '@mui/icons-material/Key';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { api, toApiError } from '../api/client';
 import { useSnackbar } from '../layout/SnackbarContext';
+import PageHeader from '../components/PageHeader';
 
 interface TokenItem {
   name: string;
@@ -42,14 +42,12 @@ export default function TokensPage() {
   });
 
   return (
-    <Paper sx={{ p: 3, }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-        <KeyIcon sx={{ color: 'primary.main' }} />
-        <Typography variant="h4" component="h1">API-токены</Typography>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Токены используются CLI и AI-агентами (заголовок Authorization: Bearer).
-      </Typography>
+    <Stack spacing={3}>
+      <PageHeader
+        title="API-токены"
+        subtitle="Токены используются CLI и AI-агентами (заголовок Authorization: Bearer)."
+      />
+      <Paper sx={{ p: 3 }}>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -131,6 +129,7 @@ export default function TokensPage() {
           <Button onClick={() => setRawToken(null)}>Закрыть</Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+      </Paper>
+    </Stack>
   );
 }
