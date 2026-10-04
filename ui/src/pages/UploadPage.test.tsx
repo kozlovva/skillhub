@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { zipSync, strToU8 } from 'fflate';
 import UploadPage from './UploadPage';
 import { SnackbarProvider } from '../layout/SnackbarContext';
 
@@ -37,6 +38,23 @@ vi.mock('../auth/KeycloakProvider', () => ({
   useAuth: () => ({ authenticated: true, token: 't', displayName: 'A', login: vi.fn(), logout: vi.fn() }),
 }));
 
+const VALID_MANIFEST = {
+  name: 'Test Element',
+  version: '1.0.0',
+  description: 'Из манифеста',
+  type: 'SKILL',
+};
+
+function zipFile(entries: Record<string, string>): File {
+  const files: Record<string, Uint8Array> = {};
+  for (const [k, v] of Object.entries(entries)) files[k] = strToU8(v);
+  return new File([zipSync(files)], 'element.zip', { type: 'application/zip' });
+}
+
+function makeZip(manifest?: unknown, extra: Record<string, string> = {}): File {
+  return zipFile(manifest == null ? extra : { 'manifest.json': JSON.stringify(manifest), ...extra });
+}
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -66,68 +84,104 @@ beforeEach(() => {
   ]);
 });
 
-async function fillForm() {
-  await userEvent.type(await screen.findByLabelText(/^Название/), 'Test Element');
-  await userEvent.click(screen.getByLabelText(/^Тип/));
-  await userEvent.click(await screen.findByRole('option', { name: 'SKILL' }));
+async function passStep1(file: File) {
+  await userEvent.upload(screen.getByTestId('version-file'), file);
+  await screen.findByTestId('archive-summary');
+  await userEvent.click(screen.getByRole('button', { name: 'Далее' }));
+  await screen.findByLabelText(/^Команда/);
+}
+
+async function fillMetadata() {
   await userEvent.click(screen.getByLabelText(/^Команда/));
   await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
   await userEvent.click(screen.getByLabelText(/^Видимость/));
   await userEvent.click(await screen.findByRole('option', { name: /PUBLIC — доступен всем/ }));
+}
+
+test('step 1: valid archive shows summary and enables next', async () => {
+  renderPage();
+  await screen.findByText('Требования к архиву');
+  expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
   await userEvent.upload(
     screen.getByTestId('version-file'),
-    new File(['data'], 'element.zip', { type: 'application/zip' })
+    makeZip(VALID_MANIFEST, { 'SKILL.md': '# hi' })
   );
-}
+  const summary = await screen.findByTestId('archive-summary');
+  expect(summary).toHaveTextContent('Test Element');
+  expect(summary).toHaveTextContent('1.0.0');
+  expect(screen.getByRole('button', { name: 'Далее' })).toBeEnabled();
+});
+
+test('step 1: archive without manifest.json shows error and blocks step 2', async () => {
+  renderPage();
+  await screen.findByText('Требования к архиву');
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    makeZip(undefined, { 'SKILL.md': '# hi' })
+  );
+  expect(await screen.findByTestId('archive-error')).toHaveTextContent(/manifest\.json/i);
+  expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+});
+
+test('step 1: manifest validation errors block step 2', async () => {
+  const cases: { manifest?: unknown; raw?: string; error: RegExp }[] = [
+    { manifest: { version: '1.0.0' }, error: /поле name обязательно/ },
+    { manifest: { name: 'x' }, error: /поле version обязательно/ },
+    { manifest: { name: 'x', version: '1.0' }, error: /semver/ },
+    { raw: '{not json', error: /корректным JSON/ },
+  ];
+  for (const c of cases) {
+    const view = renderPage();
+    const file = 'raw' in c ? zipFile({ 'manifest.json': c.raw! }) : makeZip(c.manifest);
+    await userEvent.upload(screen.getByTestId('version-file'), file);
+    expect(await screen.findByTestId('archive-error')).toHaveTextContent(c.error);
+    view.unmount();
+  }
+});
+
+test('step 1: non-zip file shows error and blocks step 2', async () => {
+  renderPage();
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    new File(['hello'], 'broken.zip', { type: 'application/zip' })
+  );
+  expect(await screen.findByTestId('archive-error')).toHaveTextContent(/ZIP-архивом/);
+  expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
+});
 
 test('accepts a file via drag and drop', async () => {
   renderPage();
-  await screen.findByLabelText(/^Название/);
+  await screen.findByText(/Перетащите файл сюда/);
   fireEvent.drop(screen.getByText(/Перетащите файл сюда/), {
-    dataTransfer: { files: [new File(['data'], 'dropped.zip', { type: 'application/zip' })] },
+    dataTransfer: { files: [makeZip(VALID_MANIFEST)] },
   });
-  expect(await screen.findByText('dropped.zip')).toBeInTheDocument();
+  expect(await screen.findByText('element.zip')).toBeInTheDocument();
 });
 
-test('shows archive manifest instructions', async () => {
+test('step 2: prefills name, slug, type and description from manifest', async () => {
   renderPage();
-  expect(await screen.findByText('Требования к архиву')).toBeInTheDocument();
-  expect(screen.getByText(/manifest\.json/)).toBeInTheDocument();
-  expect(screen.getByText(/"version": "1\.0\.0"/)).toBeInTheDocument();
+  await passStep1(makeZip(VALID_MANIFEST, { 'SKILL.md': '# hi' }));
+  expect(screen.getByLabelText(/^Название/)).toHaveValue('Test Element');
+  expect(screen.getByLabelText(/^Slug/)).toHaveValue('test-element');
+  expect(screen.getByLabelText(/^Тип/)).toHaveTextContent('SKILL');
+  expect(screen.getByLabelText(/Описание/)).toHaveValue('Из манифеста');
+  expect(screen.getByTestId('archive-entries')).toHaveTextContent('SKILL.md');
 });
 
-test('renders form and loads teams and categories', async () => {
+test('step 2: publish stays disabled until type is chosen for unknown manifest type', async () => {
   renderPage();
-  expect(await screen.findByLabelText(/^Название/)).toBeInTheDocument();
-  expect(meMock).toHaveBeenCalled();
-  expect(categoriesMock).toHaveBeenCalled();
-  await userEvent.click(screen.getByLabelText(/^Команда/));
-  expect(await screen.findByRole('option', { name: 'Core Team' })).toBeInTheDocument();
-  await userEvent.click(screen.getByLabelText(/^Категория/));
-  expect(await screen.findByRole('option', { name: 'Dev Tools' })).toBeInTheDocument();
-});
-
-test('auto-generates slug from name until slug is edited manually', async () => {
-  renderPage();
-  const slugField = await screen.findByLabelText(/^Slug/);
-  await userEvent.type(screen.getByLabelText(/^Название/), 'Test Element');
-  expect(slugField).toHaveValue('test-element');
-  await userEvent.type(slugField, 'x');
-  expect(slugField).toHaveValue('test-elementx');
-  await userEvent.type(screen.getByLabelText(/^Название/), '!');
-  expect(slugField).toHaveValue('test-elementx');
-});
-
-test('disables submit until required fields are filled', async () => {
-  renderPage();
-  await screen.findByLabelText(/^Название/);
-  expect(screen.getByRole('button', { name: /Опубликовать/i })).toBeDisabled();
-  expect(createMock).not.toHaveBeenCalled();
+  await passStep1(makeZip({ ...VALID_MANIFEST, type: 'WIDGET' }));
+  const publish = screen.getByRole('button', { name: /Опубликовать/i });
+  expect(publish).toBeDisabled();
+  await userEvent.click(screen.getByLabelText(/^Тип/));
+  await userEvent.click(await screen.findByRole('option', { name: 'SCRIPT' }));
+  expect(screen.getByRole('button', { name: /Опубликовать/i })).toBeEnabled();
 });
 
 test('creates element, publishes version and navigates to element page', async () => {
   renderPage();
-  await fillForm();
+  await passStep1(makeZip(VALID_MANIFEST));
+  await fillMetadata();
   await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
 
   await waitFor(() =>
@@ -135,7 +189,7 @@ test('creates element, publishes version and navigates to element page', async (
       slug: 'test-element',
       type: 'SKILL',
       name: 'Test Element',
-      description: undefined,
+      description: 'Из манифеста',
       team: 'core',
       category: undefined,
       tags: [],
@@ -151,7 +205,8 @@ test('creates element, publishes version and navigates to element page', async (
 test('shows slug field error on 409 conflict', async () => {
   createMock.mockRejectedValue({ status: 409 });
   renderPage();
-  await fillForm();
+  await passStep1(makeZip(VALID_MANIFEST));
+  await fillMetadata();
   await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
 
   expect(await screen.findByText(/уже существует/i)).toBeInTheDocument();
@@ -161,30 +216,45 @@ test('shows slug field error on 409 conflict', async () => {
 test('shows snackbar with api message on non-409 publish error', async () => {
   publishMock.mockRejectedValue(Object.assign(new Error('Некорректный файл'), { status: 400 }));
   renderPage();
-  await fillForm();
+  await passStep1(makeZip(VALID_MANIFEST));
+  await fillMetadata();
   await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
 
   expect(await screen.findByText(/Некорректный файл/)).toBeInTheDocument();
+});
+
+test('publish 409 shows publish-step snackbar and no slug error', async () => {
+  publishMock.mockRejectedValue({ status: 409 });
+  renderPage();
+  await passStep1(makeZip(VALID_MANIFEST));
+  await fillMetadata();
+  await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
+
+  expect(
+    await screen.findByText(/Элемент создан, но не удалось загрузить версию/)
+  ).toBeInTheDocument();
   expect(screen.queryByText(/уже существует/i)).not.toBeInTheDocument();
+});
+
+test('slug auto-generates from manifest name until edited manually', async () => {
+  renderPage();
+  await passStep1(makeZip(VALID_MANIFEST));
+  const slugField = screen.getByLabelText(/^Slug/);
+  expect(slugField).toHaveValue('test-element');
+  await userEvent.type(slugField, 'x');
+  await userEvent.type(screen.getByLabelText(/^Название/), '!');
+  expect(slugField).toHaveValue('test-elementx');
 });
 
 test('team can be cleared after selection', async () => {
   renderPage();
-  await userEvent.click(await screen.findByLabelText('Команда'));
+  await passStep1(makeZip(VALID_MANIFEST));
+  await userEvent.click(screen.getByLabelText('Команда'));
   await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
   await userEvent.click(screen.getByLabelText('Команда'));
   await userEvent.click(await screen.findByRole('option', { name: 'Без команды' }));
   await userEvent.click(screen.getByLabelText(/^Видимость/));
-  expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
-    .toHaveAttribute('aria-disabled', 'true');
-  await userEvent.click(screen.getByRole('option', { name: /PUBLIC — доступен всем/ }));
-  await userEvent.type(await screen.findByLabelText(/^Название/), 'Solo');
-  await userEvent.click(screen.getByLabelText(/^Тип/));
-  await userEvent.click(await screen.findByRole('option', { name: 'SCRIPT' }));
-  await userEvent.upload(
-    screen.getByTestId('version-file'),
-    new File(['data'], 'element.zip', { type: 'application/zip' })
-  );
+  await userEvent.click(await screen.findByRole('option', { name: /PUBLIC — доступен всем/ }));
   await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
   await waitFor(() => expect(createMock).toHaveBeenCalled());
   expect(createMock.mock.calls[0][0].team).toBeUndefined();
@@ -193,28 +263,18 @@ test('team can be cleared after selection', async () => {
 
 test('TEAM visibility is disabled without a team', async () => {
   renderPage();
-  await userEvent.click(await screen.findByLabelText('Видимость'));
+  await passStep1(makeZip(VALID_MANIFEST));
+  await userEvent.click(screen.getByLabelText(/^Видимость/));
   expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
     .toHaveAttribute('aria-disabled', 'true');
 });
 
 test('selecting a team enables TEAM visibility', async () => {
   renderPage();
-  await userEvent.click(await screen.findByLabelText('Команда'));
+  await passStep1(makeZip(VALID_MANIFEST));
+  await userEvent.click(screen.getByLabelText('Команда'));
   await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
   await userEvent.click(screen.getByLabelText(/^Видимость/));
   expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
     .not.toHaveAttribute('aria-disabled', 'true');
-});
-
-test('publish 409 shows publish-step snackbar and no slug error', async () => {
-  publishMock.mockRejectedValue({ status: 409 });
-  renderPage();
-  await fillForm();
-  await userEvent.click(screen.getByRole('button', { name: /Опубликовать/i }));
-
-  expect(
-    await screen.findByText(/Элемент создан, но не удалось загрузить версию/)
-  ).toBeInTheDocument();
-  expect(screen.queryByText(/уже существует/i)).not.toBeInTheDocument();
 });
