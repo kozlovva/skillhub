@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { register as registerSearch } from './commands/search';
+import { register as registerLogin } from './commands/login';
+import { register as registerWhoami } from './commands/whoami';
+import { register as registerInstall } from './commands/install';
 
 export function buildProgram(): Command {
   const program = new Command();
   program.name('skillhub').description('SkillHub CLI').version('0.1.0');
-  program
-    .command('install')
-    .argument('<ref>', 'element or pack slug[@version]')
-    .action(async () => {
-      console.error('Not implemented yet');
-      process.exit(1);
-    });
+  registerSearch(program);
+  registerLogin(program);
+  registerWhoami(program);
+  registerInstall(program);
   program
     .command('publish')
     .argument('<dir>', 'directory with manifest.json')
