@@ -6,15 +6,15 @@ import CatalogPage from './CatalogPage';
 
 vi.mock('../api/search', () => ({
   search: {
-    search: vi.fn().mockResolvedValue({
+    search: vi.fn().mockImplementation((params: { category?: string }) => Promise.resolve({
       items: [{
         slug: 'pdf-skill', type: 'SKILL', name: 'PDF Skill', description: 'd',
         team: 'platform', category: null, tags: [], visibility: 'PUBLIC',
         latestVersion: '1.0.0', downloadsCount: 5,
       }],
       total: 1,
-      facetsByType: { SKILL: 1 },
-    }),
+      facetsByType: params.category === 'dev' ? { SCRIPT: 2 } : { SKILL: 1 },
+    })),
   },
 }));
 
@@ -83,6 +83,19 @@ test('type filter changes query params', async () => {
   await waitFor(() => expect(search.search).toHaveBeenCalledWith(
     expect.objectContaining({ type: 'SKILL' })
   ));
+});
+
+test('type select keeps selected type when facets lack it', async () => {
+  renderPage();
+  await screen.findByText('PDF Skill');
+  await userEvent.click(screen.getByRole('combobox', { name: 'Тип' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'SKILL (1)' }));
+  await screen.findByText('PDF Skill');
+  await userEvent.click(screen.getByRole('combobox', { name: 'Категория' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'Разработка' }));
+  await waitFor(() => expect(screen.getByRole('combobox', { name: 'Тип' })).toHaveTextContent('SKILL'));
+  await userEvent.click(screen.getByRole('combobox', { name: 'Тип' }));
+  expect(await screen.findByRole('option', { name: 'SKILL' })).toBeInTheDocument();
 });
 
 test('category filter resets via Все категории', async () => {

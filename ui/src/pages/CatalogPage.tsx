@@ -69,6 +69,11 @@ export default function CatalogPage() {
 
   const categoryNames = Object.fromEntries((categories ?? []).map((c) => [c.slug, c.name]));
 
+  const facetEntries = Object.entries(data?.facetsByType ?? {});
+  const typeEntries = type && !facetEntries.some(([t]) => t === type)
+    ? [[type, 0] as [string, number], ...facetEntries]
+    : facetEntries;
+
   return (
     <Stack spacing={3}>
       <Box>
@@ -212,8 +217,8 @@ export default function CatalogPage() {
               sx={{ width: 200 }}
             >
               <MenuItem value="">Все типы</MenuItem>
-              {Object.entries(data?.facetsByType ?? {}).map(([t, count]) => (
-                <MenuItem key={t} value={t}>{`${t} (${count})`}</MenuItem>
+              {typeEntries.map(([t, count]) => (
+                <MenuItem key={t} value={t}>{count > 0 ? `${t} (${count})` : t}</MenuItem>
               ))}
             </Select>
           </FormControl>
