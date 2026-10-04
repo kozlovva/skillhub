@@ -202,10 +202,11 @@ export default function CatalogPage() {
             </IconButton>
           )}
           <FormControl size="small">
-            <InputLabel id="catalog-type-label">Тип</InputLabel>
+            <InputLabel id="catalog-type-label" shrink>Тип</InputLabel>
             <Select
               labelId="catalog-type-label"
               label="Тип"
+              displayEmpty
               value={type ?? ''}
               onChange={(e) => setType(e.target.value || null)}
               sx={{ width: 200 }}
@@ -217,10 +218,11 @@ export default function CatalogPage() {
             </Select>
           </FormControl>
           <FormControl size="small">
-            <InputLabel id="catalog-category-label">Категория</InputLabel>
+            <InputLabel id="catalog-category-label" shrink>Категория</InputLabel>
             <Select
               labelId="catalog-category-label"
               label="Категория"
+              displayEmpty
               value={category ?? ''}
               onChange={(e) => setCategory(e.target.value || null)}
               sx={{ width: 200 }}
