@@ -10,7 +10,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

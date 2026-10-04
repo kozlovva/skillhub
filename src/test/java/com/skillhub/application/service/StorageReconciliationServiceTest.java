@@ -99,4 +99,16 @@ class StorageReconciliationServiceTest {
 
         verify(storage, never()).delete(anyString());
     }
+
+    @Test
+    void deletesOrphanExactlyAtGraceBoundary() {
+        when(versions.findAllS3Keys()).thenReturn(Set.of());
+        when(storage.list()).thenReturn(List.of(
+            new StorageObjectInfo("team/boundary/1.0.0.zip", NOW.minus(Duration.ofHours(24)))
+        ));
+
+        service.reconcile();
+
+        verify(storage).delete("team/boundary/1.0.0.zip");
+    }
 }

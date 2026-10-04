@@ -20,3 +20,4 @@ skillhub:
     bucket: ${S3_BUCKET:skillhub}
     ensure-bucket: false
     presign-ttl: 10m
+    reconcile-enabled: false
