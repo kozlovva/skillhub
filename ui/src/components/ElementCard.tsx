@@ -31,6 +31,9 @@ export default function ElementCard({ element, avgRating, ratingCount, categoryN
       <CardContent>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
           <Typography variant="h6" component="h3">{element.name}</Typography>
+          <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+            {element.slug}
+          </Typography>
           <Chip size="small" label={element.type} color="primary" variant="outlined" />
           {element.category && (
             <Chip
