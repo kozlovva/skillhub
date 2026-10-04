@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 
 export interface SkillhubConfig {
   url: string;
@@ -15,7 +15,13 @@ export function defaultConfigPath(): string {
 
 export function loadConfig(path: string = defaultConfigPath()): SkillhubConfig | null {
   if (!existsSync(path)) return null;
-  const raw = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  if (raw === null || typeof raw !== 'object') return null;
   if (typeof raw.url !== 'string') return null;
   return {
     url: raw.url,
@@ -24,7 +30,7 @@ export function loadConfig(path: string = defaultConfigPath()): SkillhubConfig |
 }
 
 export function saveConfig(cfg: SkillhubConfig, path: string = defaultConfigPath()): void {
-  mkdirSync(join(path, '..'), { recursive: true });
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
 }
 

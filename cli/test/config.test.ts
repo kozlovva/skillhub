@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -11,6 +11,11 @@ afterEach(() => rmSync(cfgPath, { force: true }));
 describe('config', () => {
   it('returns null when file missing', () => {
     expect(loadConfig(join(tmp, 'nope.json'))).toBeNull();
+  });
+
+  it('returns null when file contains malformed JSON', () => {
+    writeFileSync(cfgPath, '{not json', 'utf8');
+    expect(loadConfig(cfgPath)).toBeNull();
   });
 
   it('saves and loads config', () => {
