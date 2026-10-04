@@ -1,0 +1,23 @@
+{
+  "name": "@skillhub/cli",
+  "version": "0.1.0",
+  "description": "SkillHub CLI — install, search and publish skills",
+  "license": "UNLICENSED",
+  "private": true,
+  "bin": { "skillhub": "dist/index.js" },
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.5",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.0"
+  }
+}
