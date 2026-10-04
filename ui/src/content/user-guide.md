@@ -51,7 +51,8 @@ skillhub search <query>
   "name": "Мой скилл",
   "version": "1.0.0",
   "description": "Что делает скилл",
-  "type": "SKILL"
+  "type": "SKILL",
+  "changelog": "Что изменилось в этой версии"
 }
 ```
 
