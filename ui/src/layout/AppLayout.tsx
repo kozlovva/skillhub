@@ -11,7 +11,6 @@ import { useThemeMode } from '../theme/ThemeModeProvider';
 
 const navItems = [
   { to: '/', label: 'Каталог' },
-  { to: '/guide', label: 'Инструкция' },
   { to: '/teams', label: 'Команды' },
   { to: '/tokens', label: 'API-токены' },
 ];
@@ -55,6 +54,7 @@ export default function AppLayout() {
               ...navItems,
               ...(authenticated ? [{ to: '/favorites', label: 'Избранное' }] : []),
               ...(isAdmin ? adminNavItems : []),
+              { to: '/guide', label: 'Инструкция' },
             ].map((item) => (
               <Button
                 key={item.to}

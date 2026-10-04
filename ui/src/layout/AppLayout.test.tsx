@@ -62,3 +62,16 @@ test('shows guide nav item for all users', () => {
   renderLayout();
   expect(screen.getByRole('link', { name: 'Инструкция' })).toBeInTheDocument();
 });
+
+test('renders guide nav item last in the menu', () => {
+  authState.authenticated = true;
+  renderLayout();
+  const navLinks = screen
+    .getAllByRole('link')
+    .map((link) => link.textContent)
+    .filter((label) =>
+      ['Каталог', 'Команды', 'API-токены', 'Избранное', 'Категории', 'Инструкция'].includes(label ?? ''),
+    );
+  expect(navLinks[navLinks.length - 1]).toBe('Инструкция');
+  expect(navLinks.indexOf('Инструкция')).toBeGreaterThan(navLinks.indexOf('Избранное'));
+});
