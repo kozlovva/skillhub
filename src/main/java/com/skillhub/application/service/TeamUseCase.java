@@ -12,9 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class TeamUseCase {
+
+    private static final int CANDIDATES_LIMIT = 10;
 
     private final TeamRepositoryPort teams;
     private final TeamMembershipPort membership;
@@ -49,20 +52,36 @@ public class TeamUseCase {
         return teams.findAll();
     }
 
-    @Transactional
-    public TeamMembership addMember(String teamSlug, String ssoSubject, String role, User actor) {
+    @Transactional(readOnly = true)
+    public List<User> searchCandidates(String teamSlug, String query, User actor) {
         Team team = teams.findBySlug(teamSlug)
             .orElseThrow(() -> new NotFoundException("Team not found: " + teamSlug));
-        if (!actor.isAdmin()) {
-            membership.roleOf(team.getId(), actor.getId())
-                .filter(r -> r == TeamRole.OWNER)
-                .orElseThrow(() -> new ForbiddenException("Only team OWNER can add members"));
+        requireOwnerOrAdmin(team, actor);
+        if (query == null || query.trim().length() < 2) {
+            return List.of();
         }
-        User newMember = users.findBySsoSubject(ssoSubject)
-            .orElseThrow(() -> new NotFoundException("User not found: " + ssoSubject));
+        return users.searchCandidates(query.trim(), team.getId(), CANDIDATES_LIMIT);
+    }
+
+    @Transactional
+    public TeamMembership addMember(String teamSlug, UUID userId, String role, User actor) {
+        Team team = teams.findBySlug(teamSlug)
+            .orElseThrow(() -> new NotFoundException("Team not found: " + teamSlug));
+        requireOwnerOrAdmin(team, actor);
+        User newMember = users.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found: " + userId));
         TeamRole teamRole = TeamRole.valueOf(role);
         membership.save(TeamMembership.builder()
             .teamId(team.getId()).userId(newMember.getId()).role(teamRole).build());
         return new TeamMembership(team.getId(), newMember.getId(), teamRole);
+    }
+
+    private void requireOwnerOrAdmin(Team team, User actor) {
+        if (actor.isAdmin()) {
+            return;
+        }
+        membership.roleOf(team.getId(), actor.getId())
+            .filter(r -> r == TeamRole.OWNER)
+            .orElseThrow(() -> new ForbiddenException("Only team OWNER can add members"));
     }
 }
