@@ -1,5 +1,6 @@
 package com.skillhub.adapters.out.s3;
 
+import com.skillhub.domain.model.StorageObjectInfo;
 import com.skillhub.domain.port.StoragePort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,12 +11,15 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class S3StorageAdapter implements StoragePort {
@@ -89,5 +93,15 @@ public class S3StorageAdapter implements StoragePort {
                     .bucket(bucket).key(key).build())
                 .build());
         return request.url().toString();
+    }
+
+    @Override
+    public List<StorageObjectInfo> list() {
+        List<StorageObjectInfo> result = new ArrayList<>();
+        ListObjectsV2Iterable paginator = client.listObjectsV2Paginator(
+            ListObjectsV2Request.builder().bucket(bucket).build());
+        paginator.contents().forEach(o ->
+            result.add(new StorageObjectInfo(o.key(), o.lastModified())));
+        return result;
     }
 }

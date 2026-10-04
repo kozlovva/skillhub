@@ -1,5 +1,6 @@
 package com.skillhub.adapters.out.s3;
 
+import com.skillhub.domain.model.StorageObjectInfo;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -8,6 +9,8 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,5 +59,30 @@ class S3StorageAdapterIT {
             java.net.http.HttpResponse.BodyHandlers.ofByteArray());
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).isEqualTo(data);
+    }
+
+    @Test
+    void listReturnsAllObjectsWithKeysAndTimestamps() {
+        storage.upload("team/list-el/1.0.0.zip", "a".getBytes());
+        storage.upload("personal/list-el/1.0.0.zip", "b".getBytes());
+
+        List<StorageObjectInfo> objects = storage.list();
+
+        assertThat(objects).extracting(StorageObjectInfo::key)
+            .contains("team/list-el/1.0.0.zip", "personal/list-el/1.0.0.zip");
+        assertThat(objects).allSatisfy(o -> assertThat(o.lastModified()).isNotNull());
+    }
+
+    @Test
+    void listPaginatesAcrossMultiplePages() {
+        for (int i = 0; i < 1005; i++) {
+            storage.upload("team/paginate/" + i + ".zip", new byte[] {1});
+        }
+        long count = storage.list().stream()
+            .map(StorageObjectInfo::key)
+            .filter(k -> k.startsWith("team/paginate/"))
+            .distinct()
+            .count();
+        assertThat(count).isEqualTo(1005);
     }
 }
