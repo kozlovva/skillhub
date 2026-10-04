@@ -110,7 +110,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException e) {
         return ResponseEntity.status(e.getStatusCode())
-            .body(ErrorResponse.of(e.getStatusCode().toString(), e.getReason()));
+            .body(ErrorResponse.of("BAD_REQUEST", e.getReason()));
     }
 
     @ExceptionHandler(Exception.class)
