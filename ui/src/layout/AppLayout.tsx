@@ -83,15 +83,24 @@ export default function AppLayout() {
               component={RouterLink}
               to="/upload"
               startIcon={<UploadIcon />}
-              sx={{
-                color: '#9b968c',
+              sx={(t) => ({
                 px: 2,
                 borderRadius: 1,
                 whiteSpace: 'nowrap',
-                '&:hover': { backgroundColor: '#23272d', color: '#ece9e2' },
-              }}
+                color: '#ece9e2',
+                background:
+                  t.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(108, 192, 180, 0.10), rgba(240, 138, 95, 0.14))'
+                    : 'linear-gradient(135deg, rgba(29, 94, 89, 0.06), rgba(185, 67, 28, 0.08))',
+                '&:hover': {
+                  background:
+                    t.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, rgba(108, 192, 180, 0.20), rgba(240, 138, 95, 0.26))'
+                      : 'linear-gradient(135deg, rgba(29, 94, 89, 0.12), rgba(185, 67, 28, 0.16))',
+                },
+              })}
             >
-              Загрузить элемент
+              Создать
             </Button>
           )}
           <Box sx={{ flexGrow: 1 }} />

@@ -35,13 +35,13 @@ test('renders navigation with all menu items and user name', () => {
 test('shows upload button when authenticated', () => {
   authState.authenticated = true;
   renderLayout();
-  expect(screen.getByRole('link', { name: 'Загрузить элемент' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Создать' })).toBeInTheDocument();
 });
 
 test('hides upload button when not authenticated', () => {
   authState.authenticated = false;
   renderLayout();
-  expect(screen.queryByRole('link', { name: 'Загрузить элемент' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Создать' })).not.toBeInTheDocument();
   expect(screen.queryByText('Alice')).not.toBeInTheDocument();
 });
 
