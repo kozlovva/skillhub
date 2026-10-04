@@ -1,5 +1,6 @@
 package com.skillhub.domain.port;
 
+import com.skillhub.domain.model.TeamMember;
 import com.skillhub.domain.model.TeamMembership;
 import com.skillhub.domain.model.TeamRole;
 import com.skillhub.domain.model.UserTeamRole;
@@ -12,4 +13,6 @@ public interface TeamMembershipPort {
     Optional<TeamRole> roleOf(UUID teamId, UUID userId);
     List<UserTeamRole> teamsOfUser(UUID userId);
     TeamMembership save(TeamMembership membership);
+    List<TeamMember> membersOf(UUID teamId);
+    void delete(UUID teamId, UUID userId);
 }

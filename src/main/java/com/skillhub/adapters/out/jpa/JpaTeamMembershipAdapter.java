@@ -4,6 +4,7 @@ import com.skillhub.adapters.out.jpa.entity.JpaTeamMember;
 import com.skillhub.adapters.out.jpa.repository.JpaTeamMemberRepository;
 import com.skillhub.adapters.out.jpa.repository.JpaTeamRepository;
 import com.skillhub.adapters.out.jpa.repository.JpaUserRepository;
+import com.skillhub.domain.model.TeamMember;
 import com.skillhub.domain.model.TeamMembership;
 import com.skillhub.domain.model.TeamRole;
 import com.skillhub.domain.model.UserTeamRole;
@@ -44,5 +45,19 @@ public class JpaTeamMembershipAdapter implements TeamMembershipPort {
         var userRef = userRepository.getReferenceById(m.userId());
         jpa.save(JpaTeamMember.builder().team(teamRef).user(userRef).role(m.role().name()).build());
         return m;
+    }
+
+    @Override
+    public List<TeamMember> membersOf(UUID teamId) {
+        return jpa.findByTeamId(teamId).stream()
+            .map(m -> new TeamMember(m.getUser().getId(), m.getUser().getUsername(),
+                m.getUser().getDisplayName(), TeamRole.valueOf(m.getRole())))
+            .toList();
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID teamId, UUID userId) {
+        jpa.deleteByTeamIdAndUserId(teamId, userId);
     }
 }

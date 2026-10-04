@@ -17,4 +17,11 @@ public interface JpaTeamMemberRepository extends JpaRepository<JpaTeamMember, Jp
 
     @Query("SELECT m FROM JpaTeamMember m JOIN FETCH m.team WHERE m.user.id = :userId ORDER BY m.team.name")
     List<JpaTeamMember> findByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT m FROM JpaTeamMember m JOIN FETCH m.user WHERE m.team.id = :teamId ORDER BY m.user.displayName")
+    List<JpaTeamMember> findByTeamId(@Param("teamId") UUID teamId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM JpaTeamMember m WHERE m.team.id = :teamId AND m.user.id = :userId")
+    void deleteByTeamIdAndUserId(@Param("teamId") UUID teamId, @Param("userId") UUID userId);
 }

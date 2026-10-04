@@ -169,4 +169,112 @@ class TeamUseCaseTest {
         assertThatThrownBy(() -> useCase.searchCandidates("ghost", "pet", creator))
             .isInstanceOf(NotFoundException.class);
     }
+
+    @Test
+    void membersVisibleToTeamMemberAndAdmin() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.roleOf(team.getId(), plainUser.getId()))
+            .thenReturn(Optional.of(TeamRole.MEMBER));
+        List<TeamMember> roster = List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER));
+        when(membership.membersOf(team.getId())).thenReturn(roster);
+
+        assertThat(useCase.members("ux", creator)).isEqualTo(roster);
+        assertThat(useCase.members("ux", plainUser)).isEqualTo(roster);
+    }
+
+    @Test
+    void membersHiddenFromOutsider() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.roleOf(team.getId(), plainUser.getId()))
+            .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.members("ux", plainUser))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void membersTeamNotFound() {
+        when(teams.findBySlug("ghost")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.members("ghost", creator))
+            .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void ownerChangesRole() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        User member = User.builder().id(UUID.randomUUID()).ssoSubject("m")
+            .username("member").email("m").displayName("Member").admin(false)
+            .createdAt(Instant.now()).build();
+        when(membership.membersOf(team.getId())).thenReturn(List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER),
+            new TeamMember(member.getId(), "member", "Member", TeamRole.MEMBER)));
+
+        TeamMember updated = useCase.changeRole("ux", member.getId(), "MAINTAINER", creator);
+
+        assertThat(updated.role()).isEqualTo(TeamRole.MAINTAINER);
+        assertThat(updated.username()).isEqualTo("member");
+        org.mockito.Mockito.verify(membership).save(TeamMembership.builder()
+            .teamId(team.getId()).userId(member.getId()).role(TeamRole.MAINTAINER).build());
+    }
+
+    @Test
+    void maintainerCannotChangeRole() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.roleOf(team.getId(), plainUser.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThatThrownBy(() -> useCase.changeRole("ux", creator.getId(), "MEMBER", plainUser))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void cannotDemoteLastOwner() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.membersOf(team.getId())).thenReturn(List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER)));
+        assertThatThrownBy(() -> useCase.changeRole("ux", creator.getId(), "MEMBER", creator))
+            .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void changeRoleUnknownMemberIsNotFound() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.membersOf(team.getId())).thenReturn(List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER)));
+        assertThatThrownBy(() -> useCase.changeRole("ux", UUID.randomUUID(), "MEMBER", creator))
+            .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void ownerRemovesMember() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        User member = User.builder().id(UUID.randomUUID()).ssoSubject("m")
+            .username("member").email("m").displayName("Member").admin(false)
+            .createdAt(Instant.now()).build();
+        when(membership.membersOf(team.getId())).thenReturn(List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER),
+            new TeamMember(member.getId(), "member", "Member", TeamRole.MEMBER)));
+
+        useCase.removeMember("ux", member.getId(), creator);
+
+        org.mockito.Mockito.verify(membership).delete(team.getId(), member.getId());
+    }
+
+    @Test
+    void cannotRemoveLastOwner() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.membersOf(team.getId())).thenReturn(List.of(
+            new TeamMember(creator.getId(), "admin", "Admin", TeamRole.OWNER)));
+        assertThatThrownBy(() -> useCase.removeMember("ux", creator.getId(), creator))
+            .isInstanceOf(ConflictException.class);
+        org.mockito.Mockito.verify(membership, org.mockito.Mockito.never())
+            .delete(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
 }

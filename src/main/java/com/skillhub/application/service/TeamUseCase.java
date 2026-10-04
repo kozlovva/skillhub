@@ -76,12 +76,66 @@ public class TeamUseCase {
         return new TeamMembership(team.getId(), newMember.getId(), teamRole);
     }
 
+    @Transactional(readOnly = true)
+    public List<TeamMember> members(String teamSlug, User actor) {
+        Team team = teams.findBySlug(teamSlug)
+            .orElseThrow(() -> new NotFoundException("Team not found: " + teamSlug));
+        requireMemberOrAdmin(team, actor);
+        return membership.membersOf(team.getId());
+    }
+
+    @Transactional
+    public TeamMember changeRole(String teamSlug, UUID userId, String role, User actor) {
+        Team team = teams.findBySlug(teamSlug)
+            .orElseThrow(() -> new NotFoundException("Team not found: " + teamSlug));
+        requireOwnerOrAdmin(team, actor);
+        TeamRole newRole = TeamRole.valueOf(role);
+        List<TeamMember> members = membership.membersOf(team.getId());
+        TeamMember target = requireMember(members, userId);
+        ensureNotLastOwner(members, target, newRole);
+        membership.save(TeamMembership.builder()
+            .teamId(team.getId()).userId(userId).role(newRole).build());
+        return new TeamMember(target.userId(), target.username(), target.displayName(), newRole);
+    }
+
+    @Transactional
+    public void removeMember(String teamSlug, UUID userId, User actor) {
+        Team team = teams.findBySlug(teamSlug)
+            .orElseThrow(() -> new NotFoundException("Team not found: " + teamSlug));
+        requireOwnerOrAdmin(team, actor);
+        List<TeamMember> members = membership.membersOf(team.getId());
+        TeamMember target = requireMember(members, userId);
+        ensureNotLastOwner(members, target, null);
+        membership.delete(team.getId(), userId);
+    }
+
+    private TeamMember requireMember(List<TeamMember> members, UUID userId) {
+        return members.stream().filter(m -> m.userId().equals(userId)).findFirst()
+            .orElseThrow(() -> new NotFoundException("Member not found: " + userId));
+    }
+
+    private void ensureNotLastOwner(List<TeamMember> members, TeamMember target, TeamRole newRole) {
+        boolean losingOwnership = newRole == null || newRole != TeamRole.OWNER;
+        if (target.role() == TeamRole.OWNER && losingOwnership
+            && members.stream().filter(m -> m.role() == TeamRole.OWNER).count() == 1) {
+            throw new ConflictException("Cannot remove the last OWNER of the team");
+        }
+    }
+
+    private void requireMemberOrAdmin(Team team, User actor) {
+        if (actor.isAdmin()) {
+            return;
+        }
+        membership.roleOf(team.getId(), actor.getId())
+            .orElseThrow(() -> new ForbiddenException("Only team members can view members"));
+    }
+
     private void requireOwnerOrAdmin(Team team, User actor) {
         if (actor.isAdmin()) {
             return;
         }
         membership.roleOf(team.getId(), actor.getId())
             .filter(r -> r == TeamRole.OWNER)
-            .orElseThrow(() -> new ForbiddenException("Only team OWNER can add members"));
+            .orElseThrow(() -> new ForbiddenException("Only team OWNER or admin can manage members"));
     }
 }
