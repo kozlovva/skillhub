@@ -113,9 +113,9 @@ export default function TeamsPage() {
               onChange={(e) => setMemberSubject(e.target.value)} sx={{ width: 220 }} />
             <TextField select label="Роль" value={memberRole}
               onChange={(e) => setMemberRole(e.target.value)} sx={{ width: 140 }}>
-              <MenuItem value="OWNER">OWNER</MenuItem>
-              <MenuItem value="MAINTAINER">MAINTAINER</MenuItem>
-              <MenuItem value="MEMBER">MEMBER</MenuItem>
+              <MenuItem value="OWNER">Владелец</MenuItem>
+              <MenuItem value="MAINTAINER">Редактор</MenuItem>
+              <MenuItem value="MEMBER">Участник</MenuItem>
             </TextField>
             <Button variant="contained" onClick={() => addMemberMutation.mutate()}
               disabled={!memberTeam || !memberSubject.trim()}>
