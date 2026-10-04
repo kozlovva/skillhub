@@ -35,21 +35,8 @@ export default function AdminCategoriesPage() {
     <Stack spacing={3}>
       <PageHeader title="Категории" />
       <Paper sx={{ p: 3 }}>
-        <List disablePadding sx={{ mb: 2 }}>
-        {(categories ?? []).map((c) => (
-          <ListItem key={c.slug} disableGutters sx={{ py: 0.75 }}>
-            <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', mr: 2, width: 36, height: 36 }}>
-              {c.name.charAt(0).toUpperCase()}
-            </Avatar>
-            <ListItemText
-              primary={c.name}
-              secondary={c.parent ? `${c.slug} (в «${c.parent}»)` : c.slug}
-            />
-          </ListItem>
-        ))}
-        </List>
         {isAdmin ? (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
             <TextField label="slug" value={slug}
               onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
             <TextField label="Название" value={name}
@@ -62,12 +49,25 @@ export default function AdminCategoriesPage() {
             </Button>
           </Stack>
         ) : (
-          <Typography color="text.secondary">
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
             {authenticated
               ? 'Управлять категориями могут только администраторы'
               : 'Войдите под учётной записью администратора'}
           </Typography>
         )}
+        <List disablePadding>
+        {(categories ?? []).map((c) => (
+          <ListItem key={c.slug} disableGutters sx={{ py: 0.75 }}>
+            <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', mr: 2, width: 36, height: 36 }}>
+              {c.name.charAt(0).toUpperCase()}
+            </Avatar>
+            <ListItemText
+              primary={c.name}
+              secondary={c.parent ? `${c.slug} (в «${c.parent}»)` : c.slug}
+            />
+          </ListItem>
+        ))}
+        </List>
       </Paper>
     </Stack>
   );

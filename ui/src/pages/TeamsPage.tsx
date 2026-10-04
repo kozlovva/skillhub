@@ -61,7 +61,26 @@ export default function TeamsPage() {
         </Stack>
         {teams && teams.length === 0 && (
           <Typography color="text.secondary" sx={{ mb: 1 }}>
-            Команд ещё нет — создайте первую ниже
+            Команд пока нет
+          </Typography>
+        )}
+        <Divider />
+        {isAdmin ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ my: 2 }}>
+            <TextField label="slug" value={slug}
+              onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
+            <TextField label="Название" value={name}
+              onChange={(e) => setName(e.target.value)} sx={{ width: 200 }} />
+            <Button variant="contained" startIcon={<AddBusinessIcon />} onClick={() => createMutation.mutate()}
+              disabled={!slug.trim() || !name.trim()}>
+              Создать
+            </Button>
+          </Stack>
+        ) : (
+          <Typography color="text.secondary" sx={{ my: 2 }}>
+            {authenticated
+              ? 'Создавать команды могут только администраторы'
+              : 'Войдите, чтобы управлять командами'}
           </Typography>
         )}
         <List disablePadding>
@@ -76,25 +95,6 @@ export default function TeamsPage() {
             </ListItem>
           ))}
         </List>
-        <Divider sx={{ my: 2 }} />
-        {isAdmin ? (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <TextField label="slug" value={slug}
-              onChange={(e) => setSlug(e.target.value)} sx={{ width: 160 }} />
-            <TextField label="Название" value={name}
-              onChange={(e) => setName(e.target.value)} sx={{ width: 200 }} />
-            <Button variant="contained" startIcon={<AddBusinessIcon />} onClick={() => createMutation.mutate()}
-              disabled={!slug.trim() || !name.trim()}>
-              Создать
-            </Button>
-          </Stack>
-        ) : (
-          <Typography color="text.secondary">
-            {authenticated
-              ? 'Создавать команды могут только администраторы'
-              : 'Войдите, чтобы управлять командами'}
-          </Typography>
-        )}
       </Paper>
       {canAddMembers && (
         <Paper sx={{ p: 3, }}>
