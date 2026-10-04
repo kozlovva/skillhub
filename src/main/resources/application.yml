@@ -29,6 +29,9 @@ skillhub:
     bucket: ${S3_BUCKET:skillhub}
     ensure-bucket: ${S3_ENSURE_BUCKET:true}
     presign-ttl: 10m
+    reconcile-enabled: ${S3_RECONCILE_ENABLED:true}
+    reconcile-cron: "0 0 * * * *"
+    reconcile-grace: ${S3_RECONCILE_GRACE:24h}
   api-token-prefix: skh_
   upload:
     max-uncompressed-bytes: 209715200
