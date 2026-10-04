@@ -5,6 +5,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../auth/KeycloakProvider';
 import { useThemeMode } from '../theme/ThemeModeProvider';
 
@@ -72,6 +73,22 @@ export default function AppLayout() {
               </Button>
             ))}
           </Box>
+          {authenticated && (
+            <Button
+              component={RouterLink}
+              to="/upload"
+              startIcon={<UploadIcon />}
+              sx={{
+                color: '#9b968c',
+                px: 2,
+                borderRadius: 1,
+                whiteSpace: 'nowrap',
+                '&:hover': { backgroundColor: '#23272d', color: '#ece9e2' },
+              }}
+            >
+              Загрузить элемент
+            </Button>
+          )}
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
             onClick={toggleMode}
