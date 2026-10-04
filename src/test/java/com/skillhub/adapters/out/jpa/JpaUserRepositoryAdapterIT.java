@@ -56,15 +56,16 @@ class JpaUserRepositoryAdapterIT {
 
     @Test
     void searchExcludesTeamMembers() {
-        User member = user("m1", "member1", "Member One");
-        User outsider = user("o1", "outsider1", "Outsider One");
+        String marker = UUID.randomUUID().toString();
+        User member = user("m1", "member1-" + marker, "Member One");
+        User outsider = user("o1", "outsider1-" + marker, "Outsider One");
         Team t = team("search-team");
         membership.save(TeamMembership.builder()
             .teamId(t.getId()).userId(member.getId()).role(TeamRole.MEMBER).build());
 
-        List<User> result = users.searchCandidates("1", t.getId(), 10);
+        List<User> result = users.searchCandidates("1-" + marker, t.getId(), 10);
 
-        assertThat(result).extracting(User::getUsername).containsExactly("outsider1");
+        assertThat(result).extracting(User::getUsername).containsExactly(outsider.getUsername());
     }
 
     @Test
