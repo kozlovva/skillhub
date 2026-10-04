@@ -119,7 +119,11 @@ export default function TeamsPage() {
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <TextField select label="Команда" value={memberTeam}
-              onChange={(e) => setMemberTeam(e.target.value)} sx={{ width: 160 }}>
+              onChange={(e) => {
+                setMemberTeam(e.target.value);
+                setMemberUser(null);
+                setMemberQuery('');
+              }} sx={{ width: 160 }}>
               {manageableTeams.map((t) => (
                 <MenuItem key={t.slug} value={t.slug}>{t.slug}</MenuItem>
               ))}

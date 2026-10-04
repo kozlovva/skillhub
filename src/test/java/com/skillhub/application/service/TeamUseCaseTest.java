@@ -91,6 +91,26 @@ class TeamUseCaseTest {
     }
 
     @Test
+    void maintainerCannotAddMember() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.roleOf(team.getId(), plainUser.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThatThrownBy(() -> useCase.addMember("ux", UUID.randomUUID(), "MEMBER", plainUser))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void maintainerCannotSearchCandidates() {
+        Team team = useCase.create("ux", "UX", creator);
+        when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
+        when(membership.roleOf(team.getId(), plainUser.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThatThrownBy(() -> useCase.searchCandidates("ux", "pet", plainUser))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
     void unknownUserIsNotFound() {
         Team team = useCase.create("ux", "UX", creator);
         when(teams.findBySlug("ux")).thenReturn(Optional.of(team));
