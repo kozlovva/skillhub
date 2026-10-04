@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, TextField, Button,
-  MenuItem, Select, FormControl, InputLabel, Stack, Divider,
+  MenuItem, Stack, Divider,
 } from '@mui/material';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -103,26 +103,20 @@ export default function TeamsPage() {
             <Typography variant="h6">Добавить участника</Typography>
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <FormControl sx={{ minWidth: 160 }}>
-              <InputLabel>Команда</InputLabel>
-              <Select value={memberTeam} label="Команда"
-                onChange={(e) => setMemberTeam(e.target.value)}>
-                {manageableTeams.map((t) => (
-                  <MenuItem key={t.slug} value={t.slug}>{t.slug}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField select label="Команда" value={memberTeam}
+              onChange={(e) => setMemberTeam(e.target.value)} sx={{ width: 160 }}>
+              {manageableTeams.map((t) => (
+                <MenuItem key={t.slug} value={t.slug}>{t.slug}</MenuItem>
+              ))}
+            </TextField>
             <TextField label="SSO subject" value={memberSubject}
               onChange={(e) => setMemberSubject(e.target.value)} sx={{ width: 220 }} />
-            <FormControl sx={{ minWidth: 140 }}>
-              <InputLabel>Роль</InputLabel>
-              <Select value={memberRole} label="Роль"
-                onChange={(e) => setMemberRole(e.target.value)}>
-                <MenuItem value="OWNER">OWNER</MenuItem>
-                <MenuItem value="MAINTAINER">MAINTAINER</MenuItem>
-                <MenuItem value="MEMBER">MEMBER</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField select label="Роль" value={memberRole}
+              onChange={(e) => setMemberRole(e.target.value)} sx={{ width: 140 }}>
+              <MenuItem value="OWNER">OWNER</MenuItem>
+              <MenuItem value="MAINTAINER">MAINTAINER</MenuItem>
+              <MenuItem value="MEMBER">MEMBER</MenuItem>
+            </TextField>
             <Button variant="contained" onClick={() => addMemberMutation.mutate()}
               disabled={!memberTeam || !memberSubject.trim()}>
               Добавить
