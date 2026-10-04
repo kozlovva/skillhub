@@ -44,3 +44,15 @@ test('hides upload button when not authenticated', () => {
   expect(screen.queryByRole('link', { name: 'Загрузить элемент' })).not.toBeInTheDocument();
   expect(screen.queryByText('Alice')).not.toBeInTheDocument();
 });
+
+test('shows favorites nav item when authenticated', () => {
+  authState.authenticated = true;
+  renderLayout();
+  expect(screen.getByRole('link', { name: 'Избранное' })).toBeInTheDocument();
+});
+
+test('hides favorites nav item when not authenticated', () => {
+  authState.authenticated = false;
+  renderLayout();
+  expect(screen.queryByRole('link', { name: 'Избранное' })).not.toBeInTheDocument();
+});

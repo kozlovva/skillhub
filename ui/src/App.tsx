@@ -7,6 +7,7 @@ import TeamsPage from './pages/TeamsPage';
 import AdminCategoriesPage from './pages/AdminCategoriesPage';
 import TokensPage from './pages/TokensPage';
 import UploadPage from './pages/UploadPage';
+import FavoritesPage from './pages/FavoritesPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/admin/categories" element={<AdminCategoriesPage />} />
         <Route path="/tokens" element={<TokensPage />} />
         <Route path="/upload" element={<UploadPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
       </Route>
     </Routes>
   );

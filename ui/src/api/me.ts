@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { ElementResponse } from '../types';
 
 export interface MeTeamRole {
   slug: string;
@@ -15,5 +16,9 @@ export interface MeResponse {
 export const me = {
   async get(): Promise<MeResponse> {
     return (await api.get<MeResponse>('/api/me')).data;
+  },
+
+  async favorites(): Promise<ElementResponse[]> {
+    return (await api.get<ElementResponse[]>('/api/me/favorites')).data;
   },
 };

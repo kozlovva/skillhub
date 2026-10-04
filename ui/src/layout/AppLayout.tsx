@@ -50,7 +50,11 @@ export default function AppLayout() {
             SkillHub
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {(isAdmin ? [...navItems, ...adminNavItems] : navItems).map((item) => (
+            {[
+              ...navItems,
+              ...(authenticated ? [{ to: '/favorites', label: 'Избранное' }] : []),
+              ...(isAdmin ? adminNavItems : []),
+            ].map((item) => (
               <Button
                 key={item.to}
                 component={NavLink}
