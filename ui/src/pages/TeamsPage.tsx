@@ -155,20 +155,25 @@ export default function TeamsPage() {
                 : 'Войдите, чтобы управлять командами'}
             </Typography>
           )}
-          <List disablePadding>
-            {teamList.map((t) => (
-              <ListItemButton key={t.slug} selected={t.slug === selected}
-                onClick={() => { setSelected(t.slug); setMemberUser(null); setMemberQuery(''); }}
-                sx={{ borderRadius: 1, mb: 0.5 }}>
-                <ListItemAvatar>
-                  <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', fontFamily: '"Onest", sans-serif' }}>
-                    {t.name.charAt(0).toUpperCase()}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={t.name} secondary={t.slug} />
-              </ListItemButton>
-            ))}
-          </List>
+          {teamList.length > 0 && (
+            <List disablePadding>
+              {teamList.map((t) => (
+                <ListItemButton key={t.slug} selected={t.slug === selected}
+                  onClick={() => { setSelected(t.slug); setMemberUser(null); setMemberQuery(''); }}
+                  sx={{ borderRadius: 1, mb: 0.5 }}>
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: 'rgba(29, 94, 89, 0.12)', color: 'primary.main', fontFamily: '"Onest", sans-serif' }}>
+                      {t.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText primary={t.name} secondary={t.slug} />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+          {teamList.length === 0 && (
+            <Typography color="text.secondary">Команд пока нет</Typography>
+          )}
         </Paper>
         <Paper sx={{ p: 3, flex: 1, width: '100%' }} data-testid="team-detail">
           {!selectedTeam && (

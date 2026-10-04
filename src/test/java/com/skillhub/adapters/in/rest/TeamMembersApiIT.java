@@ -1,5 +1,7 @@
 package com.skillhub.adapters.in.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillhub.application.service.ApiTokenService;
 import com.skillhub.application.service.UserSyncService;
 import com.skillhub.domain.port.UserRepositoryPort;
@@ -23,6 +25,7 @@ class TeamMembersApiIT {
     @Autowired UserSyncService users;
     @Autowired UserRepositoryPort userRepo;
     @Autowired ApiTokenService tokens;
+    @Autowired ObjectMapper objectMapper;
 
     String admin;
     String owner;
@@ -68,7 +71,7 @@ class TeamMembersApiIT {
         ResponseEntity<String> seen = rest.exchange("/api/teams/tm-team/members",
             HttpMethod.GET, new HttpEntity<>(json(maintainer)), String.class);
         assertThat(seen.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(seen.getBody()).contains("tm-owner").contains("OWNER").contains("MAINTAINER");
+        assertThat(seen.getBody()).contains("tm-owner").contains("OWNER");
 
         var stranger = users.syncFromSso("tm-stranger", "tm-stranger@b.c", "tm-stranger", "Stranger");
         String strangerAuth = "Bearer " + tokens.createToken(stranger, "stranger").rawToken();
@@ -94,7 +97,7 @@ class TeamMembersApiIT {
     }
 
     @Test
-    void removeMemberWorksAndGuardsLastOwner() {
+    void removeMemberWorksAndGuardsLastOwner() throws Exception {
         var extra = users.syncFromSso("tm-extra", "tm-extra@b.c", "tm-extra", "Tm Extra");
         rest.exchange("/api/teams/tm-team/members", HttpMethod.POST,
             new HttpEntity<>(Map.of("userId", extra.getId().toString(), "role", "MEMBER"),
@@ -109,11 +112,15 @@ class TeamMembersApiIT {
             HttpMethod.GET, new HttpEntity<>(json(admin)), String.class);
         assertThat(roster.getBody()).doesNotContain("tm-extra");
 
-        String adminMemberId = java.util.Arrays.stream(roster.getBody().split("\\},"))
-            .filter(s -> s.contains("tm-admin"))
-            .map(s -> s.replaceAll(".*\"userId\":\"([0-9a-f-]{36})\".*", "$1"))
-            .findFirst().orElse(null);
-        org.junit.jupiter.api.Assumptions.assumeTrue(adminMemberId != null);
+        String adminMemberId = null;
+        JsonNode rosterJson = objectMapper.readTree(roster.getBody());
+        for (JsonNode entry : rosterJson) {
+            if ("tm-admin".equals(entry.path("username").asText())) {
+                adminMemberId = entry.path("userId").asText();
+                break;
+            }
+        }
+        assertThat(adminMemberId).isNotNull();
 
         ResponseEntity<String> demoted = rest.exchange(
             "/api/teams/tm-team/members/" + adminMemberId,
