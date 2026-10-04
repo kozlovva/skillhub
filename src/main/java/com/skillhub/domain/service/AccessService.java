@@ -17,6 +17,9 @@ public class AccessService {
         if (element.getVisibility() == Visibility.PUBLIC) {
             return true;
         }
+        if (element.getTeam() == null) {
+            return user != null && user.isAdmin();
+        }
         return user != null && (user.isAdmin() || isTeamMember(element.getTeam(), user));
     }
 

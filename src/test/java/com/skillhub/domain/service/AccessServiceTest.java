@@ -47,6 +47,25 @@ class AccessServiceTest {
     }
 
     @Test
+    void teamElementWithoutTeamNotReadableByNonAdmin() {
+        Element orphan = Element.builder().id(UUID.randomUUID()).slug("orphan")
+            .type(ElementType.SKILL).name("n").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.TEAM).author(user)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        assertThat(access.canRead(orphan, user)).isFalse();
+    }
+
+    @Test
+    void teamElementWithoutTeamReadableByAdmin() {
+        Element orphan = Element.builder().id(UUID.randomUUID()).slug("orphan")
+            .type(ElementType.SKILL).name("n").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.TEAM).author(user)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        user.setAdmin(true);
+        assertThat(access.canRead(orphan, user)).isTrue();
+    }
+
+    @Test
     void teamElementNotReadableByOutsider() {
         when(membership.roleOf(team.getId(), user.getId())).thenReturn(Optional.empty());
         assertThat(access.canRead(element, user)).isFalse();

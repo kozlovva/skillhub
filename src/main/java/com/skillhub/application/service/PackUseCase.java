@@ -53,7 +53,9 @@ public class PackUseCase {
         if (pack.getTeam() != null
                 ? !access.canPublish(pack.getTeam(), user)
                 : !access.canPublishPersonal(pack, user)) {
-            throw new ForbiddenException("Only OWNER/MAINTAINER can modify this pack");
+            throw new ForbiddenException(pack.getTeam() == null
+                ? "Only the author can modify this pack"
+                : "Only OWNER/MAINTAINER can modify this pack");
         }
         Element element = elementUseCase.getBySlug(elementSlug, user);
         if (element.getType() == ElementType.PACK) {

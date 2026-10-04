@@ -158,6 +158,10 @@ test('team can be cleared after selection', async () => {
   await userEvent.click(await screen.findByRole('option', { name: 'Core Team' }));
   await userEvent.click(screen.getByLabelText('Команда'));
   await userEvent.click(await screen.findByRole('option', { name: 'Без команды' }));
+  await userEvent.click(screen.getByLabelText(/^Видимость/));
+  expect(await screen.findByRole('option', { name: /TEAM — только команде/ }))
+    .toHaveAttribute('aria-disabled', 'true');
+  await userEvent.click(screen.getByRole('option', { name: /PUBLIC — доступен всем/ }));
   await userEvent.type(await screen.findByLabelText(/^Название/), 'Solo');
   await userEvent.click(screen.getByLabelText(/^Тип/));
   await userEvent.click(await screen.findByRole('option', { name: 'SCRIPT' }));

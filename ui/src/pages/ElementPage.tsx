@@ -46,7 +46,7 @@ export default function ElementPage() {
   });
   const canPublish =
     isAdmin
-    || (element != null && element.team == null)
+    || (authenticated && element != null && element.team == null)
     || ['OWNER', 'MAINTAINER'].includes(teamRoleOf(element?.team ?? '') ?? '');
 
   const { data: categories } = useQuery({
