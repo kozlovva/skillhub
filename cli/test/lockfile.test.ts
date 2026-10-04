@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -19,5 +19,10 @@ describe('lockfile', () => {
     const lock = { packages: { pdf: { version: '1.0.0', installedAt: '2026-10-04T00:00:00Z' } } };
     writeLockfile(tmp, lock);
     expect(readLockfile(tmp)).toEqual(lock);
+  });
+
+  it('returns empty lock when file contains invalid JSON', () => {
+    writeFileSync(join(tmp, 'skillhub.lock'), '{broken');
+    expect(readLockfile(tmp)).toEqual({ packages: {} });
   });
 });

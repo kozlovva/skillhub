@@ -16,8 +16,13 @@ const EMPTY: LockFile = { packages: {} };
 export function readLockfile(root: string): LockFile {
   const path = join(root, 'skillhub.lock');
   if (!existsSync(path)) return { packages: {} };
-  const raw = JSON.parse(readFileSync(path, 'utf8')) as LockFile;
-  return { packages: raw.packages ?? {} };
+  try {
+    const raw = JSON.parse(readFileSync(path, 'utf8')) as LockFile;
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return { packages: {} };
+    return { packages: raw.packages ?? {} };
+  } catch {
+    return { packages: {} };
+  }
 }
 
 export function writeLockfile(root: string, lock: LockFile): void {
