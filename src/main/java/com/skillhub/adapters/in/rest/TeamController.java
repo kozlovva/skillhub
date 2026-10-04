@@ -1,11 +1,13 @@
 package com.skillhub.adapters.in.rest;
 
 import com.skillhub.adapters.in.rest.dto.AddMemberRequest;
+import com.skillhub.adapters.in.rest.dto.CandidateResponse;
 import com.skillhub.adapters.in.rest.dto.CreateTeamRequest;
 import com.skillhub.adapters.in.rest.dto.TeamResponse;
 import com.skillhub.adapters.in.security.CurrentUserResolver;
 import com.skillhub.application.service.TeamUseCase;
 import com.skillhub.domain.model.TeamMembership;
+import com.skillhub.domain.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,14 +39,22 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @GetMapping("/{slug}/member-candidates")
+    public List<CandidateResponse> memberCandidates(@PathVariable String slug,
+                                                    @RequestParam String q,
+                                                    Authentication auth) {
+        return teamUseCase.searchCandidates(slug, q, currentUser.resolve(auth))
+            .stream().map(CandidateResponse::from).toList();
+    }
+
     @PostMapping("/{slug}/members")
     public ResponseEntity<Map<String, String>> addMember(@PathVariable String slug,
                                                          @Valid @RequestBody AddMemberRequest req,
                                                          Authentication auth) {
         TeamMembership member = teamUseCase.addMember(
-            slug, req.ssoSubject(), req.role(), currentUser.resolve(auth));
+            slug, req.userId(), req.role(), currentUser.resolve(auth));
         return ResponseEntity.ok(Map.of(
-            "ssoSubject", member.userId().toString(),
+            "userId", member.userId().toString(),
             "role", member.role().name()));
     }
 }
