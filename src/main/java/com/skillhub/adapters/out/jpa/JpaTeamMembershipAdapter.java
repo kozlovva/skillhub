@@ -41,6 +41,12 @@ public class JpaTeamMembershipAdapter implements TeamMembershipPort {
     @Override
     @Transactional
     public TeamMembership save(TeamMembership m) {
+        var id = new JpaTeamMember.JpaTeamMemberId(m.teamId(), m.userId());
+        var existing = jpa.findById(id);
+        if (existing.isPresent()) {
+            existing.get().setRole(m.role().name());
+            return m;
+        }
         var teamRef = teamRepository.getReferenceById(m.teamId());
         var userRef = userRepository.getReferenceById(m.userId());
         jpa.save(JpaTeamMember.builder().team(teamRef).user(userRef).role(m.role().name()).build());
