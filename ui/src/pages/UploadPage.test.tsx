@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -79,6 +79,15 @@ async function fillForm() {
     new File(['data'], 'element.zip', { type: 'application/zip' })
   );
 }
+
+test('accepts a file via drag and drop', async () => {
+  renderPage();
+  await screen.findByLabelText(/^Название/);
+  fireEvent.drop(screen.getByText(/Перетащите файл сюда/), {
+    dataTransfer: { files: [new File(['data'], 'dropped.zip', { type: 'application/zip' })] },
+  });
+  expect(await screen.findByText('dropped.zip')).toBeInTheDocument();
+});
 
 test('renders form and loads teams and categories', async () => {
   renderPage();

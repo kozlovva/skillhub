@@ -36,6 +36,8 @@ export default function UploadPage() {
   const [visibility, setVisibility] = useState<'PUBLIC' | 'TEAM' | ''>('');
   const [file, setFile] = useState<File | null>(null);
   const [changelog, setChangelog] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: meInfo } = useQuery({
     queryKey: ['me'],
@@ -193,20 +195,50 @@ export default function UploadPage() {
             <TextField {...params} label="Теги" placeholder="Введите тег и нажмите Enter" />
           )}
         />
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Button variant="outlined" component="label">
-            Выбрать файл
-            <input
-              hidden
-              type="file"
-              data-testid="version-file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </Button>
-          <Typography variant="body2" color="text.secondary">
-            {file ? file.name : 'Файл первой версии (например, .zip)'}
-          </Typography>
-        </Stack>
+        <Box
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const dropped = e.dataTransfer.files?.[0];
+            if (dropped) setFile(dropped);
+          }}
+          sx={{
+            border: 2,
+            borderStyle: 'dashed',
+            borderColor: dragOver ? 'primary.main' : 'divider',
+            borderRadius: 1,
+            p: 3,
+            cursor: 'pointer',
+            textAlign: 'center',
+            bgcolor: dragOver ? 'action.hover' : 'transparent',
+            '&:hover': { borderColor: 'primary.main' },
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            hidden
+            type="file"
+            data-testid="version-file"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+          <Stack alignItems="center" spacing={1}>
+            <UploadIcon color={dragOver ? 'primary' : 'disabled'} />
+            <Typography>
+              {dragOver ? 'Отпустите файл здесь' : 'Перетащите файл сюда или нажмите для выбора'}
+            </Typography>
+            {file && (
+              <Typography variant="body2" color="text.secondary">
+                {file.name}
+              </Typography>
+            )}
+          </Stack>
+        </Box>
         <TextField label="Changelog" value={changelog} onChange={(e) => setChangelog(e.target.value)} />
         <Box>
           <Button
