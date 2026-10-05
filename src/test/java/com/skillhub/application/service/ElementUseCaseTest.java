@@ -29,6 +29,7 @@ class ElementUseCaseTest {
     CategoryRepositoryPort categories;
     ClockPort clock;
     TeamMembershipPort membership;
+    PackContentRepositoryPort packContents;
     ElementUseCase useCase;
 
     User owner = User.builder().id(UUID.randomUUID()).ssoSubject("s").email("e")
@@ -43,6 +44,8 @@ class ElementUseCaseTest {
         categories = mock(CategoryRepositoryPort.class);
         clock = mock(ClockPort.class);
         membership = mock(TeamMembershipPort.class);
+        packContents = mock(PackContentRepositoryPort.class);
+        when(packContents.findAllByElementId(any())).thenReturn(java.util.List.of());
         when(clock.now()).thenReturn(Instant.parse("2026-01-01T00:00:00Z"));
         when(teams.findBySlug("platform")).thenReturn(Optional.of(team));
         when(membership.roleOf(team.getId(), owner.getId()))
@@ -53,7 +56,7 @@ class ElementUseCaseTest {
             return e;
         });
         useCase = new ElementUseCase(elements, teams, categories,
-            new AccessService(membership), clock);
+            new AccessService(membership), clock, packContents, mock(AuditService.class));
     }
 
     ElementUseCase.CreateCommand cmd(String slug) {
@@ -127,6 +130,60 @@ class ElementUseCaseTest {
             .deletedAt(Instant.parse("2026-02-01T00:00:00Z")).build();
         when(elements.findBySlug("gone")).thenReturn(Optional.of(deleted));
         assertThatThrownBy(() -> useCase.getBySlug("gone", owner))
+            .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void ownerDeletesElement() {
+        Element e = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(e));
+        useCase.delete("my-skill", owner);
+        assertThat(e.getDeletedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        verify(elements).save(e);
+    }
+
+    @Test
+    void maintainerCannotDeleteElement() {
+        Element e = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(e));
+        when(membership.roleOf(team.getId(), owner.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThatThrownBy(() -> useCase.delete("my-skill", owner))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void elementInPackCannotBeDeleted() {
+        Element e = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(e));
+        Element pack = Element.builder().id(UUID.randomUUID()).slug("the-pack")
+            .type(ElementType.PACK).name("The Pack").description("")
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(packContents.findAllByElementId(e.getId())).thenReturn(java.util.List.of(
+            PackContent.builder().packElement(pack).element(e).versionConstraint("latest").build()));
+        assertThatThrownBy(() -> useCase.delete("my-skill", owner))
+            .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void alreadyDeletedElementIsNotFound() {
+        Element e = Element.builder().id(UUID.randomUUID()).slug("my-skill")
+            .type(ElementType.SKILL).name("my-skill").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now())
+            .deletedAt(Instant.parse("2026-02-01T00:00:00Z")).build();
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.of(e));
+        assertThatThrownBy(() -> useCase.delete("my-skill", owner))
             .isInstanceOf(NotFoundException.class);
     }
 }
