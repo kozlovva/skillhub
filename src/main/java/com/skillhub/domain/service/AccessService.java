@@ -43,6 +43,22 @@ public class AccessService {
             && user.getId().equals(element.getAuthor().getId()));
     }
 
+    public boolean canDelete(Element element, User user) {
+        if (user == null) {
+            return false;
+        }
+        if (user.isAdmin()) {
+            return true;
+        }
+        if (element.getTeam() == null) {
+            return element.getAuthor() != null
+                && user.getId().equals(element.getAuthor().getId());
+        }
+        return membership.roleOf(element.getTeam().getId(), user.getId())
+            .map(r -> r == TeamRole.OWNER)
+            .orElse(false);
+    }
+
     public boolean isTeamMember(Team team, User user) {
         return membership.roleOf(team.getId(), user.getId()).isPresent();
     }
