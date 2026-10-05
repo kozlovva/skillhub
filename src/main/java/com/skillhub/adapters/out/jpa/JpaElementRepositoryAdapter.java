@@ -26,7 +26,7 @@ public class JpaElementRepositoryAdapter implements ElementRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Element> findBySlug(String slug) {
-        return jpa.findBySlug(slug).map(ElementJpaMapper::toDomain);
+        return jpa.findBySlugAndDeletedAtIsNull(slug).map(ElementJpaMapper::toDomain);
     }
 
     @Override

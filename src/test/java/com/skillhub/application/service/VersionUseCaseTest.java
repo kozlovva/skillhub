@@ -237,6 +237,27 @@ class VersionUseCaseTest {
     }
 
     @Test
+    void getVersionOfDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.getVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
+    void listVersionsOfDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.listVersions("my-skill", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
+    void publishToDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.publish("my-skill", zip("1.0.0"), null, owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
     void getArchiveReturnsPresignedUrlAndIncrementsDownloads() {
         ElementVersion version = ElementVersion.builder().id(UUID.randomUUID())
             .element(element).version("1.0.0").s3_key("platform/my-skill/1.0.0.zip").build();

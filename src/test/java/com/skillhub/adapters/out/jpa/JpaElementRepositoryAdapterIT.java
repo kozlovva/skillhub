@@ -56,4 +56,23 @@ class JpaElementRepositoryAdapterIT {
         assertThat(membership.roleOf(team.getId(), author.getId()))
             .as("membership from raw SQL is empty until seeded").isEmpty();
     }
+
+    @Test
+    void findBySlugExcludesSoftDeletedElementButSlugStaysTaken() {
+        User author = users.save(User.builder()
+            .ssoSubject("softdel-sub").email("softdel@b.c").displayName("Soft")
+            .admin(false).createdAt(Instant.now()).build());
+        Element saved = elements.save(Element.builder()
+            .slug("soft-deleted-element").type(ElementType.SKILL).name("Gone")
+            .description("d").tags(new String[0]).visibility(Visibility.PUBLIC)
+            .author(author).downloadsCount(0)
+            .createdAt(Instant.now()).updatedAt(Instant.now()).build());
+
+        saved.setDeletedAt(Instant.now());
+        elements.save(saved);
+
+        assertThat(elements.findBySlug("soft-deleted-element")).isEmpty();
+        assertThat(elements.existsBySlug("soft-deleted-element"))
+            .as("deleted slug must not be reusable").isTrue();
+    }
 }
