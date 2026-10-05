@@ -148,7 +148,7 @@ export default function TokensPage() {
         <Button
           variant="contained"
           onClick={() => createMutation.mutate()}
-          disabled={!name.trim()}
+          disabled={!name.trim() || createMutation.isPending}
         >
           Создать токен
         </Button>

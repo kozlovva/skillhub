@@ -8,7 +8,7 @@ const { postMock, getMock } = vi.hoisted(() => ({
     data: { token: 'skh_newtoken123', name: 'cli' },
   }),
   getMock: vi.fn().mockResolvedValue({
-    data: [{ name: 'cli', createdAt: '2026-01-01T00:00:00Z', lastUsedAt: null, expiresAt: null }],
+    data: [{ id: 'tok-1', name: 'cli', createdAt: '2026-01-01T00:00:00Z', lastUsedAt: null, expiresAt: null, revokedAt: null }],
   }),
 }));
 
