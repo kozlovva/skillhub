@@ -98,21 +98,29 @@ export default function ElementPage() {
   const deleteElementMutation = useMutation({
     mutationFn: () => elements.remove(slug!),
     onSuccess: () => {
+      setElementDeleteOpen(false);
       showSuccess('Элемент удалён');
       qc.invalidateQueries({ queryKey: ['elements'] });
       navigate('/catalog');
     },
-    onError: (e) => showError(toApiError(e).message),
+    onError: (e) => {
+      setElementDeleteOpen(false);
+      showError(toApiError(e).message);
+    },
   });
 
   const deleteVersionMutation = useMutation({
     mutationFn: (version: string) => elements.removeVersion(slug!, version),
     onSuccess: () => {
+      setVersionToDelete(null);
       showSuccess('Версия удалена');
       qc.invalidateQueries({ queryKey: ['versions', slug] });
       qc.invalidateQueries({ queryKey: ['element', slug] });
     },
-    onError: (e) => showError(toApiError(e).message),
+    onError: (e) => {
+      setVersionToDelete(null);
+      showError(toApiError(e).message);
+    },
   });
 
   const favoriteMutation = useMutation({
@@ -333,10 +341,11 @@ export default function ElementPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setElementDeleteOpen(false)}>Отмена</Button>
-          <Button color="error" onClick={() => {
-            setElementDeleteOpen(false);
-            deleteElementMutation.mutate();
-          }}>
+          <Button
+            color="error"
+            disabled={deleteElementMutation.isPending}
+            onClick={() => deleteElementMutation.mutate()}
+          >
             Удалить
           </Button>
         </DialogActions>
@@ -349,10 +358,13 @@ export default function ElementPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setVersionToDelete(null)}>Отмена</Button>
-          <Button color="error" onClick={() => {
-            if (versionToDelete) deleteVersionMutation.mutate(versionToDelete);
-            setVersionToDelete(null);
-          }}>
+          <Button
+            color="error"
+            disabled={deleteVersionMutation.isPending}
+            onClick={() => {
+              if (versionToDelete) deleteVersionMutation.mutate(versionToDelete);
+            }}
+          >
             Удалить
           </Button>
         </DialogActions>

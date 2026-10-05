@@ -64,8 +64,11 @@ vi.mock('../auth/KeycloakProvider', () => ({
 
 beforeEach(() => {
   snackbar.showSuccess.mockClear();
+  snackbar.showError.mockClear();
   auth.reset();
-  elements.get.mockResolvedValue({ ...element });
+  vi.mocked(elements.remove).mockClear();
+  vi.mocked(elements.removeVersion).mockClear();
+  vi.mocked(elements.get).mockResolvedValue({ ...element });
 });
 
 function renderPage() {
@@ -158,13 +161,13 @@ test('admin sees element delete button', async () => {
 });
 
 test('personal author sees element delete button', async () => {
-  elements.get.mockResolvedValue({ ...element, team: null, authorId: 'u-1' });
+  vi.mocked(elements.get).mockResolvedValue({ ...element, team: null, authorId: 'u-1' });
   renderPage();
   expect(await screen.findByRole('button', { name: 'Удалить элемент' })).toBeInTheDocument();
 });
 
 test('non-author non-admin on personal element does not see delete button', async () => {
-  elements.get.mockResolvedValue({ ...element, team: null, authorId: 'someone-else' });
+  vi.mocked(elements.get).mockResolvedValue({ ...element, team: null, authorId: 'someone-else' });
   renderPage();
   expect(await screen.findByText('PDF Skill')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Удалить элемент' })).not.toBeInTheDocument();
