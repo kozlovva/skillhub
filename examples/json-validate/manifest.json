@@ -1,0 +1,10 @@
+{
+  "name": "JSON Validate",
+  "slug": "json-validate",
+  "version": "1.0.0",
+  "description": "Validate JSON files with precise line/column error output; recursive directory mode and indent fixing",
+  "type": "SKILL",
+  "visibility": "PUBLIC",
+  "tags": ["json", "validation", "tooling"],
+  "changelog": "First release"
+}

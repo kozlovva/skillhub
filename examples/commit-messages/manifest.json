@@ -1,0 +1,10 @@
+{
+  "name": "Commit Messages",
+  "slug": "commit-messages",
+  "version": "1.0.0",
+  "description": "Conventional Commits guide with types table, examples and a commit template file",
+  "type": "SKILL",
+  "visibility": "PUBLIC",
+  "tags": ["git", "commits", "conventions"],
+  "changelog": "First release"
+}

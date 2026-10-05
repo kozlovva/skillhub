@@ -1,0 +1,10 @@
+{
+  "name": "Code Stats",
+  "slug": "code-stats",
+  "version": "1.0.0",
+  "description": "Count files and lines of code grouped by extension",
+  "type": "SKILL",
+  "visibility": "PUBLIC",
+  "tags": ["stats", "metrics", "demo"],
+  "changelog": "First release"
+}

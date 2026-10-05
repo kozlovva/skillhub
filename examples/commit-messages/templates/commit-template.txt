@@ -1,0 +1,14 @@
+# <type>(<scope>): <subject — imperative, max 72 chars>
+#
+# <body — why was this change needed, wrap at 100 chars>
+#
+# <footer — BREAKING CHANGE:, Closes: <ticket>>
+#
+# --- types ---
+# feat      new user-visible behavior
+# fix       bug fix
+# refactor  no behavior change
+# perf      performance fix
+# test      tests only
+# docs      documentation
+# chore     build, deps, tooling

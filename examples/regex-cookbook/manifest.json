@@ -1,0 +1,10 @@
+{
+  "name": "Regex Cookbook",
+  "slug": "regex-cookbook",
+  "version": "1.0.0",
+  "description": "Regex recipes and full pattern reference for Java, JavaScript and grep",
+  "type": "SKILL",
+  "visibility": "PUBLIC",
+  "tags": ["regex", "reference", "text-processing"],
+  "changelog": "First release"
+}

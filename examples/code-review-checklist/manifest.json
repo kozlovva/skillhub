@@ -1,0 +1,10 @@
+{
+  "name": "Code Review Checklist",
+  "slug": "code-review-checklist",
+  "version": "1.0.0",
+  "description": "Two-pass code review checklist: correctness then quality, with verdict format",
+  "type": "SKILL",
+  "visibility": "PUBLIC",
+  "tags": ["review", "quality", "process"],
+  "changelog": "First release"
+}

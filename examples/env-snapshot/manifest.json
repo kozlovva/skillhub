@@ -1,0 +1,10 @@
+{
+  "name": "Env Snapshot",
+  "slug": "env-snapshot",
+  "version": "1.0.0",
+  "description": "PowerShell snapshot of tool versions, env vars and disk space for bug reports",
+  "type": "SCRIPT",
+  "visibility": "PUBLIC",
+  "tags": ["powershell", "diagnostics", "environment"],
+  "changelog": "First release"
+}
