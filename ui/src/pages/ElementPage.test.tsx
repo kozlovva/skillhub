@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ElementPage from './ElementPage';
 import type { VersionResponse } from '../types';
 
+const snackbar = vi.hoisted(() => ({ showSuccess: vi.fn(), showError: vi.fn() }));
+
+vi.mock('../layout/SnackbarContext', () => ({ useSnackbar: () => snackbar }));
+
 const element = vi.hoisted(() => ({
   slug: 'pdf-skill', type: 'SKILL' as const, name: 'PDF Skill', description: 'desc',
   team: 'platform', category: null, tags: ['pdf'], visibility: 'PUBLIC' as const,
@@ -46,6 +50,8 @@ vi.mock('../auth/KeycloakProvider', () => ({
   }),
 }));
 
+beforeEach(() => snackbar.showSuccess.mockClear());
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -83,6 +89,7 @@ test('hero install button copies skillhub install command', async () => {
   const btn = await screen.findByRole('button', { name: 'Команда установки' });
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill');
+  await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));
 });
 
 test('version copy button copies versioned install command', async () => {
@@ -94,4 +101,5 @@ test('version copy button copies versioned install command', async () => {
   const btn = await screen.findByRole('button', { name: 'Скопировать команду установки' });
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill@1.0.0');
+  await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));
 });
