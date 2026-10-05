@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface JpaPackContentRepository extends JpaRepository<JpaPackContent, JpaPackContentId> {
     List<JpaPackContent> findAllByPackElementId(UUID packElementId);
+    List<JpaPackContent> findAllByElementId(UUID elementId);
 }

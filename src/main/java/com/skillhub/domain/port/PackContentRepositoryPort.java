@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface PackContentRepositoryPort {
     PackContent save(PackContent content);
     List<PackContent> findAllByPackId(UUID packId);
+    List<PackContent> findAllByElementId(UUID elementId);
 }
