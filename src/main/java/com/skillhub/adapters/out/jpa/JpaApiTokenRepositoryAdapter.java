@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -31,35 +32,30 @@ public class JpaApiTokenRepositoryAdapter implements ApiTokenRepositoryPort {
             .createdAt(token.getCreatedAt())
             .lastUsedAt(token.getLastUsedAt())
             .expiresAt(token.getExpiresAt())
+            .revokedAt(token.getRevokedAt())
             .build());
-        return ApiToken.builder()
-            .id(saved.getId())
-            .user(UserJpaMapper.toDomain(saved.getUser()))
-            .name(saved.getName())
-            .tokenHash(saved.getTokenHash())
-            .createdAt(saved.getCreatedAt())
-            .lastUsedAt(saved.getLastUsedAt())
-            .expiresAt(saved.getExpiresAt())
-            .build();
+        return toDomain(saved);
     }
 
     @Override
     public Optional<ApiToken> findByTokenHash(String tokenHash) {
-        return jpa.findByTokenHash(tokenHash).map(t -> ApiToken.builder()
-            .id(t.getId())
-            .user(UserJpaMapper.toDomain(t.getUser()))
-            .name(t.getName())
-            .tokenHash(t.getTokenHash())
-            .createdAt(t.getCreatedAt())
-            .lastUsedAt(t.getLastUsedAt())
-            .expiresAt(t.getExpiresAt())
-            .build());
+        return jpa.findByTokenHash(tokenHash).map(this::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApiToken> findByUserId(java.util.UUID userId) {
-        return jpa.findAllByUserId(userId).stream().map(t -> ApiToken.builder()
+    public List<ApiToken> findByUserId(UUID userId) {
+        return jpa.findAllByUserId(userId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ApiToken> findByIdAndUserId(UUID tokenId, UUID userId) {
+        return jpa.findByIdAndUserId(tokenId, userId).map(this::toDomain);
+    }
+
+    private ApiToken toDomain(JpaApiToken t) {
+        return ApiToken.builder()
             .id(t.getId())
             .user(UserJpaMapper.toDomain(t.getUser()))
             .name(t.getName())
@@ -67,6 +63,7 @@ public class JpaApiTokenRepositoryAdapter implements ApiTokenRepositoryPort {
             .createdAt(t.getCreatedAt())
             .lastUsedAt(t.getLastUsedAt())
             .expiresAt(t.getExpiresAt())
-            .build()).toList();
+            .revokedAt(t.getRevokedAt())
+            .build();
     }
 }

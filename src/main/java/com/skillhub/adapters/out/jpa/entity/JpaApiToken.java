@@ -18,4 +18,5 @@ public class JpaApiToken {
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "last_used_at") private Instant lastUsedAt;
     @Column(name = "expires_at") private Instant expiresAt;
+    @Column(name = "revoked_at") private Instant revokedAt;
 }

@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface JpaApiTokenRepository extends JpaRepository<JpaApiToken, UUID> {
     Optional<JpaApiToken> findByTokenHash(String tokenHash);
     List<JpaApiToken> findAllByUserId(UUID userId);
+    Optional<JpaApiToken> findByIdAndUserId(UUID id, UUID userId);
 }

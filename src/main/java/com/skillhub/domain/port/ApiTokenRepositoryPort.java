@@ -10,4 +10,5 @@ public interface ApiTokenRepositoryPort {
     ApiToken save(ApiToken token);
     Optional<ApiToken> findByTokenHash(String tokenHash);
     List<ApiToken> findByUserId(UUID userId);
+    Optional<ApiToken> findByIdAndUserId(UUID tokenId, UUID userId);
 }

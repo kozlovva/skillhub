@@ -13,4 +13,5 @@ public class ApiToken {
     private Instant createdAt;
     private Instant lastUsedAt;
     private Instant expiresAt;
+    private Instant revokedAt;
 }
