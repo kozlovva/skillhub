@@ -21,7 +21,8 @@ import java.util.List;
 public class MeController {
 
     public record TeamRoleItem(String slug, String name, String role) {}
-    public record MeResponse(String username, boolean admin, List<TeamRoleItem> teams) {}
+    public record MeResponse(String username, String userId, boolean admin,
+                             List<TeamRoleItem> teams) {}
 
     private final CurrentUserResolver currentUser;
     private final TeamMembershipPort memberships;
@@ -33,7 +34,8 @@ public class MeController {
         List<TeamRoleItem> teams = memberships.teamsOfUser(user.getId()).stream()
             .map(MeController::toItem)
             .toList();
-        return new MeResponse(user.getDisplayName(), user.isAdmin(), teams);
+        return new MeResponse(user.getDisplayName(), user.getId().toString(),
+            user.isAdmin(), teams);
     }
 
     @GetMapping("/favorites")

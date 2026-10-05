@@ -132,4 +132,17 @@ class ElementApiIT {
             new HttpEntity<>(jsonHeaders()), String.class);
         assertThat(list.getBody()).contains("public-skill");
     }
+
+    @Test
+    void ownerDeletesElementThenItIsGone() {
+        createCategory();
+        rest.exchange("/api/elements", HttpMethod.POST,
+            new HttpEntity<>(skillRequest("del-skill"), jsonHeaders()), String.class);
+        ResponseEntity<String> del = rest.exchange("/api/elements/del-skill", HttpMethod.DELETE,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(del.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        ResponseEntity<String> got = rest.exchange("/api/elements/del-skill", HttpMethod.GET,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(got.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
 }
