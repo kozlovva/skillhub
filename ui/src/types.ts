@@ -13,6 +13,7 @@ export interface ElementResponse {
   downloadsCount: number;
   avgRating?: number | null;
   ratingCount?: number | null;
+  authorId: string | null;
 }
 
 export interface FileDto {

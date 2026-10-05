@@ -7,6 +7,7 @@ export interface AuthContextValue {
   authenticated: boolean;
   token: string | null;
   displayName: string | null;
+  userId: string | null;
   isAdmin: boolean;
   myTeamRoles: Record<string, string>;
   teamRoleOf: (teamSlug: string) => string | null;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextValue>({
   authenticated: false,
   token: null,
   displayName: null,
+  userId: null,
   isAdmin: false,
   myTeamRoles: {},
   teamRoleOf: () => null,
@@ -40,6 +42,7 @@ export default function KeycloakProvider({ children }: { children: ReactNode }) 
   const [ready, setReady] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [myTeamRoles, setMyTeamRoles] = useState<Record<string, string>>({});
 
@@ -67,16 +70,19 @@ export default function KeycloakProvider({ children }: { children: ReactNode }) 
   useEffect(() => {
     if (!authenticated) {
       setIsAdmin(false);
+      setUserId(null);
       setMyTeamRoles({});
       return;
     }
     meApi.get().then((info) => {
       setIsAdmin(info.admin);
+      setUserId(info.userId);
       const roles: Record<string, string> = {};
       for (const t of info.teams) roles[t.slug] = t.role;
       setMyTeamRoles(roles);
     }).catch(() => {
       setIsAdmin(false);
+      setUserId(null);
       setMyTeamRoles({});
     });
   }, [authenticated]);
@@ -91,6 +97,7 @@ export default function KeycloakProvider({ children }: { children: ReactNode }) 
         displayName: keycloak.tokenParsed
           ? (keycloak.tokenParsed as { preferred_username?: string }).preferred_username ?? null
           : null,
+        userId,
         isAdmin,
         myTeamRoles,
         teamRoleOf: (teamSlug: string) => myTeamRoles[teamSlug] ?? null,
