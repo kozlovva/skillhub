@@ -142,7 +142,8 @@ export default function UploadPage() {
         ))}
       </Stepper>
       {activeStep === 0 && (
-        <Paper sx={{ p: 3, maxWidth: 720, width: '100%', mx: 'auto' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Paper sx={{ p: 3, width: '100%', maxWidth: 720 }}>
           <Stack spacing={2}>
             <Box
               onClick={() => fileInputRef.current?.click()}
@@ -239,9 +240,11 @@ export default function UploadPage() {
             </Box>
           </Stack>
         </Paper>
+        </Box>
       )}
       {activeStep === 1 && archive?.ok && (
-        <Paper sx={{ p: 3, maxWidth: 720, width: '100%', mx: 'auto' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Paper sx={{ p: 3, width: '100%', maxWidth: 720 }}>
           <Stack spacing={2}>
             <TextField
               label="Название"
@@ -367,6 +370,7 @@ export default function UploadPage() {
             </Box>
           </Stack>
         </Paper>
+        </Box>
       )}
     </Stack>
   );
