@@ -121,6 +121,30 @@ class VersionDownloadIT extends VersionPublishIT {
     }
 
     @Test
+    void deletedElementVersionsAndDownloadAreGone() throws Exception {
+        rest.exchange("/api/elements", HttpMethod.POST, new HttpEntity<>(Map.of(
+            "slug", "gone-dl-skill", "type", "SKILL", "name", "GoneDl",
+            "description", "d", "team", "pub-team", "tags", new String[]{},
+            "visibility", "PUBLIC"), jsonHeaders()), String.class);
+        publish("gone-dl-skill", "1.0.0", "one");
+
+        HttpResponse<String> before = getNoRedirect(
+            "/api/elements/gone-dl-skill/versions/1.0.0/download");
+        assertThat(before.statusCode()).isEqualTo(302);
+
+        ResponseEntity<String> del = rest.exchange("/api/elements/gone-dl-skill",
+            HttpMethod.DELETE, new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(del.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        HttpResponse<String> list = getNoRedirect("/api/elements/gone-dl-skill/versions");
+        assertThat(list.statusCode()).isEqualTo(404);
+
+        HttpResponse<String> after = getNoRedirect(
+            "/api/elements/gone-dl-skill/versions/1.0.0/download");
+        assertThat(after.statusCode()).isEqualTo(404);
+    }
+
+    @Test
     void downloadsCounterIncrements() throws Exception {
         publish("pub-skill", "5.0.0", "five");
         HttpResponse<String> download = getNoRedirect(

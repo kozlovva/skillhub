@@ -202,7 +202,7 @@ class ElementApiIT {
     }
 
     @Test
-    void deletedElementVersionsAndDownloadAreGone() {
+    void deletedElementVersionsAreGone() {
         createCategory();
         rest.exchange("/api/elements", HttpMethod.POST,
             new HttpEntity<>(skillRequest("gone-skill"), jsonHeaders()), String.class);
@@ -212,11 +212,6 @@ class ElementApiIT {
         ResponseEntity<String> versions = rest.exchange("/api/elements/gone-skill/versions",
             HttpMethod.GET, new HttpEntity<>(jsonHeaders()), String.class);
         assertThat(versions.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-
-        ResponseEntity<String> download = rest.exchange(
-            "/api/elements/gone-skill/versions/1.0.0/download",
-            HttpMethod.GET, new HttpEntity<>(jsonHeaders()), String.class);
-        assertThat(download.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
