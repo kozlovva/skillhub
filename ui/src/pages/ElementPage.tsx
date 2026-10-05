@@ -167,6 +167,10 @@ export default function ElementPage() {
               downloadFile(elements.downloadVersionUrl(slug!, v), `${slug}-${v}.zip`)
                 .catch((e) => showError(toApiError(e).message));
             }}
+            onCopyInstall={(v) => {
+              void navigator.clipboard?.writeText(`skillhub install ${element.slug}@${v}`);
+              showSuccess('Команда скопирована');
+            }}
           />
         ) : (
           <Typography color="text.secondary">Версий пока нет</Typography>

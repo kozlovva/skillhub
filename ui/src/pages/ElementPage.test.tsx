@@ -84,3 +84,14 @@ test('hero install button copies skillhub install command', async () => {
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill');
 });
+
+test('version copy button copies versioned install command', async () => {
+  const writeText = vi.fn();
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText }, configurable: true,
+  });
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Скопировать команду установки' });
+  await userEvent.click(btn);
+  expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill@1.0.0');
+});
