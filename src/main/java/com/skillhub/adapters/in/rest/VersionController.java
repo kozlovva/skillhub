@@ -62,4 +62,12 @@ public class VersionController {
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(data);
     }
+
+    @DeleteMapping("/{version}")
+    public ResponseEntity<Void> delete(@PathVariable String slug,
+                                       @PathVariable String version,
+                                       Authentication auth) {
+        versionUseCase.deleteVersion(slug, version, currentUser.resolve(auth));
+        return ResponseEntity.noContent().build();
+    }
 }

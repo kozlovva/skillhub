@@ -19,6 +19,7 @@ public final class ElementVersionJpaMapper {
             .fileIndex(e.getFileIndex())
             .publishedBy(UserJpaMapper.toDomain(e.getPublishedBy()))
             .createdAt(e.getCreatedAt()).publishedAt(e.getPublishedAt())
+            .deletedAt(e.getDeletedAt())
             .build();
     }
 
@@ -34,6 +35,7 @@ public final class ElementVersionJpaMapper {
             .fileIndex(d.getFileIndex())
             .publishedBy(UserJpaMapper.toEntity(d.getPublishedBy()))
             .createdAt(d.getCreatedAt()).publishedAt(d.getPublishedAt())
+            .deletedAt(d.getDeletedAt())
             .build();
     }
 }

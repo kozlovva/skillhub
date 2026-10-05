@@ -165,4 +165,18 @@ class VersionPublishIT {
         ResponseEntity<String> r = publish("pub-skill", "not-semver", null);
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @Test
+    void ownerDeletesVersionAndListHidesIt() {
+        publish("pub-skill", "3.0.0", "three");
+        ResponseEntity<String> del = rest.exchange(
+            "/api/elements/pub-skill/versions/3.0.0", HttpMethod.DELETE,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(del.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> list = rest.exchange(
+            "/api/elements/pub-skill/versions", HttpMethod.GET,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(list.getBody()).doesNotContain("3.0.0");
+    }
 }

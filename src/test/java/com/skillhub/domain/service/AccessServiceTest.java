@@ -92,4 +92,38 @@ class AccessServiceTest {
         user.setAdmin(true);
         assertThat(access.canPublish(team, user)).isTrue();
     }
+
+    @Test
+    void onlyOwnerOrAdminCanDeleteTeamElement() {
+        element.setVisibility(Visibility.PUBLIC);
+        when(membership.roleOf(team.getId(), user.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThat(access.canDelete(element, user)).isFalse();
+
+        when(membership.roleOf(team.getId(), user.getId()))
+            .thenReturn(Optional.of(TeamRole.OWNER));
+        assertThat(access.canDelete(element, user)).isTrue();
+
+        when(membership.roleOf(team.getId(), user.getId())).thenReturn(Optional.empty());
+        user.setAdmin(true);
+        assertThat(access.canDelete(element, user)).isTrue();
+    }
+
+    @Test
+    void authorCanDeletePersonalElement() {
+        Element personal = Element.builder().id(UUID.randomUUID()).slug("p")
+            .type(ElementType.SKILL).name("p").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(user)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        assertThat(access.canDelete(personal, user)).isTrue();
+
+        User other = User.builder().id(UUID.randomUUID()).ssoSubject("o").email("o")
+            .displayName("o").admin(false).createdAt(Instant.now()).build();
+        assertThat(access.canDelete(personal, other)).isFalse();
+    }
+
+    @Test
+    void nullUserCannotDelete() {
+        assertThat(access.canDelete(element, null)).isFalse();
+    }
 }

@@ -9,9 +9,11 @@ import java.util.UUID;
 
 public interface JpaElementVersionRepository extends JpaRepository<JpaElementVersion, UUID> {
     Optional<JpaElementVersion> findByElementIdAndVersion(UUID elementId, String version);
-    Optional<JpaElementVersion> findFirstByElementIdAndStatusOrderByPublishedAtDesc(
+    Optional<JpaElementVersion> findByElementIdAndVersionAndDeletedAtIsNull(
+        UUID elementId, String version);
+    Optional<JpaElementVersion> findFirstByElementIdAndStatusAndDeletedAtIsNullOrderByPublishedAtDesc(
         UUID elementId, String status);
-    List<JpaElementVersion> findAllByElementIdOrderByCreatedAtDesc(UUID elementId);
+    List<JpaElementVersion> findAllByElementIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID elementId);
 
     @Query("select v.s3Key from JpaElementVersion v")
     List<String> findAllS3Keys();

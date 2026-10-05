@@ -114,6 +114,27 @@ class SocialUseCaseTest {
     }
 
     @Test
+    void favoritesExcludeDeletedElements() {
+        Element pub = Element.builder().id(UUID.randomUUID()).slug("pub")
+            .type(ElementType.SKILL).name("pub").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        Element deleted = Element.builder().id(UUID.randomUUID()).slug("gone")
+            .type(ElementType.SKILL).name("gone").description("").team(null)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now())
+            .deletedAt(Instant.parse("2026-02-01T00:00:00Z")).build();
+        when(favorites.findAllByUserId(viewer.getId())).thenReturn(List.of(
+            new Favorite(viewer.getId(), deleted.getId(), Instant.now()),
+            new Favorite(viewer.getId(), pub.getId(), Instant.now())));
+        when(elements.findById(pub.getId())).thenReturn(Optional.of(pub));
+        when(elements.findById(deleted.getId())).thenReturn(Optional.of(deleted));
+        when(membership.roleOf(any(), any())).thenReturn(Optional.empty());
+        List<Element> result = useCase.favorites(viewer);
+        assertThat(result).extracting(Element::getSlug).containsExactly("pub");
+    }
+
+    @Test
     void favoritesReturnOnlyVisibleElements() {
         Element pub = Element.builder().id(UUID.randomUUID()).slug("pub")
             .type(ElementType.SKILL).name("pub").description("").team(null)

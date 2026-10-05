@@ -7,7 +7,7 @@ public record ElementResponse(
     String slug, String type, String name, String description,
     String team, String category, String[] tags, String visibility,
     String latestVersion, long downloadsCount,
-    Double avgRating, Long ratingCount
+    Double avgRating, Long ratingCount, String authorId
 ) {
     public static ElementResponse from(Element e) {
         return from(e, null);
@@ -21,6 +21,7 @@ public record ElementResponse(
             e.getTags(), e.getVisibility().name(),
             e.getLatestVersion(), e.getDownloadsCount(),
             rating == null ? null : rating.avg(),
-            rating == null ? null : rating.count());
+            rating == null ? null : rating.count(),
+            e.getAuthor() == null ? null : e.getAuthor().getId().toString());
     }
 }

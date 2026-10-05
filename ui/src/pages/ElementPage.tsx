@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography, Chip, Stack, Paper, Rating, Button, TextField,
-  Dialog, DialogTitle, DialogContent, DialogActions, Box, ButtonBase, Avatar,
+  Dialog, DialogTitle, DialogContent, DialogActions, Box, ButtonBase, Avatar, Tooltip,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HistoryIcon from '@mui/icons-material/History';
 import FolderIcon from '@mui/icons-material/Folder';
 import ReviewsIcon from '@mui/icons-material/Reviews';
@@ -31,13 +32,16 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 
 export default function ElementPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { showError, showSuccess } = useSnackbar();
-  const { authenticated, isAdmin, teamRoleOf } = useAuth();
+  const { authenticated, isAdmin, teamRoleOf, userId } = useAuth();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
+  const [elementDeleteOpen, setElementDeleteOpen] = useState(false);
+  const [versionToDelete, setVersionToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [changelog, setChangelog] = useState('');
 
@@ -49,6 +53,12 @@ export default function ElementPage() {
     isAdmin
     || (authenticated && element != null && element.team == null)
     || ['OWNER', 'MAINTAINER'].includes(teamRoleOf(element?.team ?? '') ?? '');
+  const canDelete =
+    authenticated && (
+      isAdmin
+      || (element?.team == null && element?.authorId != null && element.authorId === userId)
+      || teamRoleOf(element?.team ?? '') === 'OWNER'
+    );
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -83,6 +93,34 @@ export default function ElementPage() {
       qc.invalidateQueries({ queryKey: ['element', slug] });
     },
     onError: (e) => showError(toApiError(e).message),
+  });
+
+  const deleteElementMutation = useMutation({
+    mutationFn: () => elements.remove(slug!),
+    onSuccess: () => {
+      setElementDeleteOpen(false);
+      showSuccess('Элемент удалён');
+      qc.invalidateQueries({ queryKey: ['elements'] });
+      navigate('/catalog');
+    },
+    onError: (e) => {
+      setElementDeleteOpen(false);
+      showError(toApiError(e).message);
+    },
+  });
+
+  const deleteVersionMutation = useMutation({
+    mutationFn: (version: string) => elements.removeVersion(slug!, version),
+    onSuccess: () => {
+      setVersionToDelete(null);
+      showSuccess('Версия удалена');
+      qc.invalidateQueries({ queryKey: ['versions', slug] });
+      qc.invalidateQueries({ queryKey: ['element', slug] });
+    },
+    onError: (e) => {
+      setVersionToDelete(null);
+      showError(toApiError(e).message);
+    },
   });
 
   const favoriteMutation = useMutation({
@@ -133,6 +171,20 @@ export default function ElementPage() {
             onToggle={() => favoriteMutation.mutate(!info?.favorited)}
           />
           <Box sx={{ flexGrow: 1 }} />
+          {canDelete && (
+            <Tooltip title="Удалить элемент">
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                startIcon={<DeleteOutlineIcon />}
+                aria-label="Удалить элемент"
+                onClick={() => setElementDeleteOpen(true)}
+              >
+                Удалить
+              </Button>
+            </Tooltip>
+          )}
           <Button
             size="small"
             variant="outlined"
@@ -174,6 +226,7 @@ export default function ElementPage() {
               void navigator.clipboard?.writeText(`skillhub install ${element.slug}@${v}`);
               showSuccess('Команда скопирована');
             }}
+            onDelete={canDelete ? (v) => setVersionToDelete(v) : undefined}
           />
         ) : (
           <Typography color="text.secondary">Версий пока нет</Typography>
@@ -277,6 +330,42 @@ export default function ElementPage() {
           <Button onClick={() => setReviewOpen(false)}>Отмена</Button>
           <Button onClick={() => reviewMutation.mutate()} disabled={!reviewText.trim()}>
             Отправить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={elementDeleteOpen} onClose={() => setElementDeleteOpen(false)}>
+        <DialogTitle>Удалить элемент {element.name}?</DialogTitle>
+        <DialogContent>
+          <Typography>Элемент будет скрыт из каталога и поиска. Действие необратимо в интерфейсе.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setElementDeleteOpen(false)}>Отмена</Button>
+          <Button
+            color="error"
+            disabled={deleteElementMutation.isPending}
+            onClick={() => deleteElementMutation.mutate()}
+          >
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={versionToDelete != null} onClose={() => setVersionToDelete(null)}>
+        <DialogTitle>Удалить версию {versionToDelete}?</DialogTitle>
+        <DialogContent>
+          <Typography>Версия будет скрыта. Последняя версия пересчитается автоматически.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVersionToDelete(null)}>Отмена</Button>
+          <Button
+            color="error"
+            disabled={deleteVersionMutation.isPending}
+            onClick={() => {
+              if (versionToDelete) deleteVersionMutation.mutate(versionToDelete);
+            }}
+          >
+            Удалить
           </Button>
         </DialogActions>
       </Dialog>

@@ -27,7 +27,8 @@ public class SearchAdapter implements SearchPort {
     private EntityManager em;
 
     private static final String BASE_WHERE = """
-        (e.visibility = 'PUBLIC'
+        e.deleted_at IS NULL
+        AND (e.visibility = 'PUBLIC'
          OR :admin = true
          OR e.team_id IN (SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
         AND (CAST(:category AS text) IS NULL OR e.category_id = (SELECT c.id FROM categories c WHERE c.slug = :category))
@@ -52,7 +53,8 @@ public class SearchAdapter implements SearchPort {
             case DOWNLOADS -> "ORDER BY e.downloads_count " + dir + ", e.id";
             case RATING -> "ORDER BY rt.avg_rating " + dir + " NULLS LAST, e.id";
             case PUBLISHED -> "ORDER BY (SELECT MAX(v.published_at) FROM element_versions v " +
-                "WHERE v.element_id = e.id AND v.status = 'PUBLISHED') " + dir + " NULLS LAST, e.id";
+                "WHERE v.element_id = e.id AND v.status = 'PUBLISHED' AND v.deleted_at IS NULL) "
+                + dir + " NULLS LAST, e.id";
         };
     }
 

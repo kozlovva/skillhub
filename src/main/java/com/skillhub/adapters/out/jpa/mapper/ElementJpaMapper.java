@@ -22,6 +22,7 @@ public final class ElementJpaMapper {
             .latestChangelog(e.getLatestChangelog() == null ? "" : e.getLatestChangelog())
             .downloadsCount(e.getDownloadsCount())
             .createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt())
+            .deletedAt(e.getDeletedAt())
             .build();
     }
 
@@ -37,6 +38,7 @@ public final class ElementJpaMapper {
             .latestChangelog(d.getLatestChangelog() == null ? "" : d.getLatestChangelog())
             .downloadsCount(d.getDownloadsCount())
             .createdAt(d.getCreatedAt()).updatedAt(d.getUpdatedAt())
+            .deletedAt(d.getDeletedAt())
             .build();
     }
 }

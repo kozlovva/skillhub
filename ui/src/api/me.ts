@@ -9,6 +9,7 @@ export interface MeTeamRole {
 
 export interface MeResponse {
   username: string;
+  userId: string;
   admin: boolean;
   teams: MeTeamRole[];
 }

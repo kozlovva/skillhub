@@ -49,4 +49,10 @@ public class ElementController {
             .map(ElementResponse::from)
             .toList();
     }
+
+    @DeleteMapping("/{slug}")
+    public ResponseEntity<Void> delete(@PathVariable String slug, Authentication auth) {
+        elementUseCase.delete(slug, currentUser.resolve(auth));
+        return ResponseEntity.noContent().build();
+    }
 }

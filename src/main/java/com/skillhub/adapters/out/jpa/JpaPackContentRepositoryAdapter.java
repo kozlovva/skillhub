@@ -42,6 +42,14 @@ public class JpaPackContentRepositoryAdapter implements PackContentRepositoryPor
             .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackContent> findAllByElementId(UUID elementId) {
+        return jpa.findAllByElementId(elementId).stream()
+            .map(this::toDomain)
+            .toList();
+    }
+
     private PackContent toDomain(JpaPackContent e) {
         return PackContent.builder()
             .packElement(com.skillhub.adapters.out.jpa.mapper.ElementJpaMapper.toDomain(e.getPackElement()))

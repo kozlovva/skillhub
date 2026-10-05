@@ -22,4 +22,5 @@ public class Element {
     private long downloadsCount;
     private Instant createdAt;
     private Instant updatedAt;
+    private Instant deletedAt;
 }

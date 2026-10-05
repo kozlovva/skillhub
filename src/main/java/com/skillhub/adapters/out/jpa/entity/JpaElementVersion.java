@@ -28,4 +28,5 @@ public class JpaElementVersion {
     private JpaUser publishedBy;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "published_at") private Instant publishedAt;
+    @Column(name = "deleted_at") private Instant deletedAt;
 }

@@ -33,6 +33,7 @@ class VersionUseCaseTest {
     AuditService audit;
     ClockPort clock;
     TeamMembershipPort membership;
+    PackContentRepositoryPort packContents;
     VersionUseCase useCase;
 
     User owner = User.builder().id(UUID.randomUUID()).ssoSubject("s").email("e")
@@ -70,6 +71,8 @@ class VersionUseCaseTest {
         audit = mock(AuditService.class);
         clock = mock(ClockPort.class);
         membership = mock(TeamMembershipPort.class);
+        packContents = mock(PackContentRepositoryPort.class);
+        when(packContents.findAllByElementId(any())).thenReturn(java.util.List.of());
         when(clock.now()).thenReturn(Instant.parse("2026-01-01T00:00:00Z"));
         when(elements.findBySlug("my-skill")).thenReturn(Optional.of(element));
         when(membership.roleOf(team.getId(), owner.getId()))
@@ -83,7 +86,93 @@ class VersionUseCaseTest {
         });
         useCase = new VersionUseCase(elements, versions, storage, audit,
             new AccessService(membership), new ArchiveService(200, 10), clock,
-            java.time.Duration.ofMinutes(10));
+            java.time.Duration.ofMinutes(10), packContents);
+    }
+
+    @Test
+    void ownerDeletesVersionAndRecomputesLatest() {
+        ElementVersion v2 = ElementVersion.builder().id(UUID.randomUUID()).element(element)
+            .version("2.0.0").status(VersionStatus.PUBLISHED).changelog("two")
+            .s3_key("platform/my-skill/2.0.0.zip").sizeBytes(1).fileIndex("{}")
+            .publishedBy(owner).createdAt(Instant.now()).publishedAt(Instant.now()).build();
+        ElementVersion v1 = ElementVersion.builder().id(UUID.randomUUID()).element(element)
+            .version("1.0.0").status(VersionStatus.PUBLISHED).changelog("one")
+            .s3_key("platform/my-skill/1.0.0.zip").sizeBytes(1).fileIndex("{}")
+            .publishedBy(owner).createdAt(Instant.now()).publishedAt(Instant.now()).build();
+        element.setLatestVersion("2.0.0");
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "2.0.0"))
+            .thenReturn(Optional.of(v2));
+        when(versions.findAllByElementIdOrderByCreatedAtDesc(element.getId()))
+            .thenReturn(java.util.List.of(v1));
+        useCase.deleteVersion("my-skill", "2.0.0", owner);
+        assertThat(v2.getDeletedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        assertThat(element.getLatestVersion()).isEqualTo("1.0.0");
+        assertThat(element.getLatestChangelog()).isEqualTo("one");
+        verify(elements).save(element);
+    }
+
+    @Test
+    void deletingOnlyVersionClearsLatest() {
+        ElementVersion v1 = ElementVersion.builder().id(UUID.randomUUID()).element(element)
+            .version("1.0.0").status(VersionStatus.PUBLISHED).changelog("one")
+            .s3_key("platform/my-skill/1.0.0.zip").sizeBytes(1).fileIndex("{}")
+            .publishedBy(owner).createdAt(Instant.now()).publishedAt(Instant.now()).build();
+        element.setLatestVersion("1.0.0");
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "1.0.0"))
+            .thenReturn(Optional.of(v1));
+        when(versions.findAllByElementIdOrderByCreatedAtDesc(element.getId()))
+            .thenReturn(java.util.List.of());
+        useCase.deleteVersion("my-skill", "1.0.0", owner);
+        assertThat(element.getLatestVersion()).isNull();
+        assertThat(element.getLatestChangelog()).isEqualTo("");
+        verify(elements).save(element);
+    }
+
+    @Test
+    void versionPinnedByPackCannotBeDeleted() {
+        ElementVersion v1 = ElementVersion.builder().id(UUID.randomUUID()).element(element)
+            .version("1.0.0").status(VersionStatus.PUBLISHED).changelog("one")
+            .s3_key("platform/my-skill/1.0.0.zip").sizeBytes(1).fileIndex("{}")
+            .publishedBy(owner).createdAt(Instant.now()).publishedAt(Instant.now()).build();
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "1.0.0"))
+            .thenReturn(Optional.of(v1));
+        Element pack = Element.builder().id(UUID.randomUUID()).slug("the-pack")
+            .type(ElementType.PACK).name("The Pack").description("")
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(packContents.findAllByElementId(element.getId())).thenReturn(java.util.List.of(
+            PackContent.builder().packElement(pack).element(element)
+                .versionConstraint("1.0.0").build()));
+        assertThatThrownBy(() -> useCase.deleteVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void latestConstraintDoesNotBlockVersionDelete() {
+        ElementVersion v1 = ElementVersion.builder().id(UUID.randomUUID()).element(element)
+            .version("1.0.0").status(VersionStatus.PUBLISHED).changelog("one")
+            .s3_key("platform/my-skill/1.0.0.zip").sizeBytes(1).fileIndex("{}")
+            .publishedBy(owner).createdAt(Instant.now()).publishedAt(Instant.now()).build();
+        element.setLatestVersion("2.0.0");
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "1.0.0"))
+            .thenReturn(Optional.of(v1));
+        Element pack = Element.builder().id(UUID.randomUUID()).slug("the-pack")
+            .type(ElementType.PACK).name("The Pack").description("")
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(packContents.findAllByElementId(element.getId())).thenReturn(java.util.List.of(
+            PackContent.builder().packElement(pack).element(element)
+                .versionConstraint("latest").build()));
+        useCase.deleteVersion("my-skill", "1.0.0", owner);
+        assertThat(v1.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void maintainerCannotDeleteVersion() {
+        when(membership.roleOf(team.getId(), owner.getId()))
+            .thenReturn(Optional.of(TeamRole.MAINTAINER));
+        assertThatThrownBy(() -> useCase.deleteVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
@@ -137,6 +226,35 @@ class VersionUseCaseTest {
         when(elements.findBySlug("my-skill")).thenReturn(Optional.of(personal));
         assertThatThrownBy(() -> useCase.publish("my-skill", zip("1.0.0"), "init", stranger))
             .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void deletedVersionIsNotReturnedByGetVersion() {
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "1.0.0"))
+            .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.getVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
+    void getVersionOfDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.getVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
+    void listVersionsOfDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.listVersions("my-skill", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
+    void publishToDeletedElementIsNotFound() {
+        when(elements.findBySlug("my-skill")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.publish("my-skill", zip("1.0.0"), null, owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
     }
 
     @Test

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface JpaElementRepository extends JpaRepository<JpaElement, UUID> {
     Optional<JpaElement> findBySlug(String slug);
+    Optional<JpaElement> findBySlugAndDeletedAtIsNull(String slug);
     boolean existsBySlug(String slug);
 
     @Modifying

@@ -237,4 +237,33 @@ class SearchAdapterIT {
         assertThat(desc.items()).extracting(Element::getSlug)
             .containsExactly("sort-p-newer", "sort-p-older", "sort-p-none");
     }
+
+    @Test
+    void sortByPublishedIgnoresDeletedVersions() {
+        cleanCatalog();
+        User author = newAuthor("sort-pd-author");
+        Team team = newTeam("sort-pd-team");
+
+        Element withDeletedNewest = newElement(
+            "sort-pd-a", "A", ElementType.SKILL, team, author);
+        Element other = newElement("sort-pd-b", "B", ElementType.SKILL, team, author);
+
+        jdbc.update("""
+            INSERT INTO element_versions (element_id, version, status, s3_key, size_bytes, file_index, published_by, published_at)
+            VALUES (?, '1.0.0', 'PUBLISHED', 'k', 1, '{}'::jsonb, ?, now() - interval '3 days')
+            """, withDeletedNewest.getId(), author.getId());
+        jdbc.update("""
+            INSERT INTO element_versions (element_id, version, status, s3_key, size_bytes, file_index, published_by, published_at, deleted_at)
+            VALUES (?, '2.0.0', 'PUBLISHED', 'k', 1, '{}'::jsonb, ?, now() - interval '1 day', now() - interval '1 day')
+            """, withDeletedNewest.getId(), author.getId());
+        jdbc.update("""
+            INSERT INTO element_versions (element_id, version, status, s3_key, size_bytes, file_index, published_by, published_at)
+            VALUES (?, '1.0.0', 'PUBLISHED', 'k', 1, '{}'::jsonb, ?, now() - interval '2 days')
+            """, other.getId(), author.getId());
+
+        SearchQueryResult desc = searchAdapter.search(new SearchQuery(
+            "", "SKILL", null, author.getId(), false, 20, 0, SortBy.PUBLISHED, SortOrder.DESC));
+        assertThat(desc.items()).extracting(Element::getSlug)
+            .containsExactly("sort-pd-b", "sort-pd-a");
+    }
 }

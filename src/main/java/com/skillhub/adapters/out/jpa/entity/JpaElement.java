@@ -33,4 +33,5 @@ public class JpaElement {
     @Column(name = "downloads_count", nullable = false) private long downloadsCount;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
+    @Column(name = "deleted_at") private Instant deletedAt;
 }

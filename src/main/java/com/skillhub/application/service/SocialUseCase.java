@@ -93,6 +93,7 @@ public class SocialUseCase {
         return favorites.findAllByUserId(viewer.getId()).stream()
             .map(f -> elements.findById(f.elementId()))
             .flatMap(Optional::stream)
+            .filter(e -> e.getDeletedAt() == null)
             .filter(e -> access.canRead(e, viewer))
             .toList();
     }

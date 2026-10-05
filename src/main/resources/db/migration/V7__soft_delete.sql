@@ -1,0 +1,2 @@
+ALTER TABLE elements ADD COLUMN deleted_at TIMESTAMPTZ NULL;
+ALTER TABLE element_versions ADD COLUMN deleted_at TIMESTAMPTZ NULL;

@@ -11,6 +11,7 @@ import com.skillhub.domain.port.ElementRepositoryPort;
 import com.skillhub.domain.port.ElementVersionRepositoryPort;
 import com.skillhub.domain.port.ClockPort;
 import com.skillhub.domain.port.StoragePort;
+import com.skillhub.domain.port.PackContentRepositoryPort;
 import com.skillhub.domain.service.AccessService;
 import com.skillhub.domain.service.ArchiveService;
 import com.skillhub.core.exception.UnprocessableException;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +39,7 @@ public class VersionUseCase {
     private final ArchiveService archiveService;
     private final ClockPort clock;
     private final Duration presignTtl;
+    private final PackContentRepositoryPort packContents;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public VersionUseCase(ElementRepositoryPort elements,
@@ -44,7 +47,8 @@ public class VersionUseCase {
                           StoragePort storage, AuditService audit,
                           AccessService access, ArchiveService archiveService,
                           ClockPort clock,
-                          @Value("${skillhub.storage.presign-ttl:10m}") Duration presignTtl) {
+                          @Value("${skillhub.storage.presign-ttl:10m}") Duration presignTtl,
+                          PackContentRepositoryPort packContents) {
         this.elements = elements;
         this.versions = versions;
         this.storage = storage;
@@ -53,6 +57,7 @@ public class VersionUseCase {
         this.archiveService = archiveService;
         this.clock = clock;
         this.presignTtl = presignTtl;
+        this.packContents = packContents;
     }
 
     @Transactional
@@ -101,6 +106,45 @@ public class VersionUseCase {
         return version;
     }
 
+    @Transactional
+    public void deleteVersion(String slug, String version, User user) {
+        Element element = elements.findBySlug(slug)
+            .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (element.getDeletedAt() != null) {
+            throw new NotFoundException("Element not found: " + slug);
+        }
+        if (!access.canDelete(element, user)) {
+            throw new ForbiddenException("Not allowed to delete versions of: " + slug);
+        }
+        ElementVersion target = versions.findActiveByElementIdAndVersion(element.getId(), version)
+            .orElseThrow(() -> new NotFoundException(
+                "Version not found: " + slug + "@" + version));
+
+        boolean pinned = packContents.findAllByElementId(element.getId()).stream()
+            .anyMatch(rc -> version.equals(rc.getVersionConstraint()));
+        if (pinned) {
+            throw new ConflictException(
+                "Version " + version + " is pinned by a pack");
+        }
+
+        Instant now = clock.now();
+        target.setDeletedAt(now);
+        versions.save(target);
+
+        if (version.equals(element.getLatestVersion())) {
+            ElementVersion next = versions
+                .findAllByElementIdOrderByCreatedAtDesc(element.getId()).stream()
+                .filter(x -> x.getStatus() == VersionStatus.PUBLISHED)
+                .findFirst().orElse(null);
+            element.setLatestVersion(next == null ? null : next.getVersion());
+            element.setLatestChangelog(next == null ? "" : next.getChangelog());
+            element.setUpdatedAt(now);
+            elements.save(element);
+        }
+        audit.log(user, "DELETE_VERSION", element.getId(),
+            Map.of("version", version));
+    }
+
     private String buildFileIndex(ArchiveInfo info) {
         ObjectNode root = mapper.createObjectNode();
         root.put("totalSize", info.totalSize());
@@ -123,7 +167,7 @@ public class VersionUseCase {
         return "latest".equals(version)
             ? versions.findLatestPublished(element.getId())
                 .orElseThrow(() -> new NotFoundException("No published versions for: " + slug))
-            : versions.findByElementIdAndVersion(element.getId(), version)
+            : versions.findActiveByElementIdAndVersion(element.getId(), version)
                 .orElseThrow(() -> new NotFoundException(
                     "Version not found: " + slug + "@" + version));
     }

@@ -8,12 +8,16 @@ import com.skillhub.domain.model.*;
 import com.skillhub.domain.port.CategoryRepositoryPort;
 import com.skillhub.domain.port.ClockPort;
 import com.skillhub.domain.port.ElementRepositoryPort;
+import com.skillhub.domain.port.PackContentRepositoryPort;
 import com.skillhub.domain.port.TeamRepositoryPort;
 import com.skillhub.domain.service.AccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ElementUseCase {
@@ -27,15 +31,20 @@ public class ElementUseCase {
     private final CategoryRepositoryPort categories;
     private final AccessService access;
     private final ClockPort clock;
+    private final PackContentRepositoryPort packContents;
+    private final AuditService audit;
 
     public ElementUseCase(ElementRepositoryPort elements, TeamRepositoryPort teams,
                           CategoryRepositoryPort categories, AccessService access,
-                          ClockPort clock) {
+                          ClockPort clock, PackContentRepositoryPort packContents,
+                          AuditService audit) {
         this.elements = elements;
         this.teams = teams;
         this.categories = categories;
         this.access = access;
         this.clock = clock;
+        this.packContents = packContents;
+        this.audit = audit;
     }
 
     @Transactional
@@ -78,15 +87,44 @@ public class ElementUseCase {
     public Element getBySlug(String slug, User viewer) {
         Element element = elements.findBySlug(slug)
             .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (element.getDeletedAt() != null) {
+            throw new NotFoundException("Element not found: " + slug);
+        }
         if (!access.canRead(element, viewer)) {
             throw new ForbiddenException("Element is not visible to you: " + slug);
         }
         return element;
     }
 
+    @Transactional
+    public void delete(String slug, User user) {
+        Element element = elements.findBySlug(slug)
+            .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (element.getDeletedAt() != null) {
+            throw new NotFoundException("Element not found: " + slug);
+        }
+        if (!access.canDelete(element, user)) {
+            throw new ForbiddenException("Not allowed to delete element: " + slug);
+        }
+        var refs = packContents.findAllByElementId(element.getId());
+        if (!refs.isEmpty()) {
+            String packs = refs.stream()
+                .map(rc -> rc.getPackElement().getSlug())
+                .distinct().sorted()
+                .collect(Collectors.joining(", "));
+            throw new ConflictException("Element is used in packs: " + packs);
+        }
+        Instant now = clock.now();
+        element.setDeletedAt(now);
+        element.setUpdatedAt(now);
+        elements.save(element);
+        audit.log(user, "DELETE_ELEMENT", element.getId(), Map.of("slug", slug));
+    }
+
     @Transactional(readOnly = true)
     public List<Element> listVisible(User viewer) {
         return elements.findAll().stream()
+            .filter(e -> e.getDeletedAt() == null)
             .filter(e -> access.canRead(e, viewer))
             .toList();
     }

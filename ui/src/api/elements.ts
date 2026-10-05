@@ -23,6 +23,12 @@ export const elements = {
     const params = changelog ? { changelog } : undefined;
     return (await api.post<VersionResponse>(`/api/elements/${slug}/versions`, form, { params })).data;
   },
+  async remove(slug: string): Promise<void> {
+    await api.delete(`/api/elements/${slug}`);
+  },
+  async removeVersion(slug: string, version: string): Promise<void> {
+    await api.delete(`/api/elements/${slug}/versions/${version}`);
+  },
   downloadVersionUrl(slug: string, version: string): string {
     const base = import.meta.env.VITE_API_URL ?? '';
     return `${base}/api/elements/${slug}/versions/${version}/download`;

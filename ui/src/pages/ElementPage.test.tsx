@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ElementPage from './ElementPage';
+import { elements } from '../api/elements';
 import type { VersionResponse } from '../types';
 
 const snackbar = vi.hoisted(() => ({ showSuccess: vi.fn(), showError: vi.fn() }));
@@ -12,7 +13,7 @@ vi.mock('../layout/SnackbarContext', () => ({ useSnackbar: () => snackbar }));
 const element = vi.hoisted(() => ({
   slug: 'pdf-skill', type: 'SKILL' as const, name: 'PDF Skill', description: 'desc',
   team: 'platform', category: null, tags: ['pdf'], visibility: 'PUBLIC' as const,
-  latestVersion: '1.0.0', downloadsCount: 3,
+  latestVersion: '1.0.0', downloadsCount: 3, authorId: 'u-1',
 }));
 
 vi.mock('../api/elements', () => ({
@@ -26,6 +27,8 @@ vi.mock('../api/elements', () => ({
     publishVersion: vi.fn(),
     create: vi.fn(),
     list: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
+    removeVersion: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -41,16 +44,32 @@ vi.mock('../api/social', () => ({
   },
 }));
 
-vi.mock('../auth/KeycloakProvider', () => ({
-  useAuth: () => ({
-    authenticated: true, token: 't', displayName: 'A',
-    isAdmin: false, myTeamRoles: { platform: 'OWNER' },
-    teamRoleOf: (slug: string) => (slug === 'platform' ? 'OWNER' : null),
+const auth = vi.hoisted(() => {
+  const make = () => ({
+    authenticated: true, token: 't', displayName: 'A', userId: 'u-1',
+    isAdmin: false, myTeamRoles: { platform: 'OWNER' } as Record<string, string>,
+    teamRoleOf: (slug: string): string | null => (slug === 'platform' ? 'OWNER' : null),
     login: vi.fn(), logout: vi.fn(),
-  }),
+  });
+  const obj: { current: ReturnType<typeof make>; reset: () => void } = {
+    current: make(),
+    reset() { obj.current = make(); },
+  };
+  return obj;
+});
+
+vi.mock('../auth/KeycloakProvider', () => ({
+  useAuth: () => auth.current,
 }));
 
-beforeEach(() => snackbar.showSuccess.mockClear());
+beforeEach(() => {
+  snackbar.showSuccess.mockClear();
+  snackbar.showError.mockClear();
+  auth.reset();
+  vi.mocked(elements.remove).mockClear();
+  vi.mocked(elements.removeVersion).mockClear();
+  vi.mocked(elements.get).mockResolvedValue({ ...element });
+});
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -102,4 +121,54 @@ test('version copy button copies versioned install command', async () => {
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill@1.0.0');
   await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));
+});
+
+test('owner sees delete element button and confirms', async () => {
+  const { elements } = await import('../api/elements');
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Удалить элемент' });
+  await userEvent.click(btn);
+  const confirm = await screen.findByRole('button', { name: 'Удалить' });
+  await userEvent.click(confirm);
+  await waitFor(() => expect(elements.remove).toHaveBeenCalledWith('pdf-skill'));
+});
+
+test('version delete calls removeVersion after confirm', async () => {
+  const { elements } = await import('../api/elements');
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Удалить версию 1.0.0' });
+  await userEvent.click(btn);
+  const confirm = await screen.findByRole('button', { name: 'Удалить' });
+  await userEvent.click(confirm);
+  await waitFor(() => expect(elements.removeVersion).toHaveBeenCalledWith('pdf-skill', '1.0.0'));
+});
+
+test('team MAINTAINER does not see element or version delete buttons', async () => {
+  auth.current.teamRoleOf = (slug: string): string | null =>
+    (slug === 'platform' ? 'MAINTAINER' : null);
+  renderPage();
+  expect(await screen.findByText('PDF Skill')).toBeInTheDocument();
+  expect(await screen.findByText('1.0.0')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Удалить элемент' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Удалить версию 1.0.0' })).not.toBeInTheDocument();
+});
+
+test('admin sees element delete button', async () => {
+  auth.current.isAdmin = true;
+  auth.current.teamRoleOf = () => null;
+  renderPage();
+  expect(await screen.findByRole('button', { name: 'Удалить элемент' })).toBeInTheDocument();
+});
+
+test('personal author sees element delete button', async () => {
+  vi.mocked(elements.get).mockResolvedValue({ ...element, team: null, authorId: 'u-1' });
+  renderPage();
+  expect(await screen.findByRole('button', { name: 'Удалить элемент' })).toBeInTheDocument();
+});
+
+test('non-author non-admin on personal element does not see delete button', async () => {
+  vi.mocked(elements.get).mockResolvedValue({ ...element, team: null, authorId: 'someone-else' });
+  renderPage();
+  expect(await screen.findByText('PDF Skill')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Удалить элемент' })).not.toBeInTheDocument();
 });
