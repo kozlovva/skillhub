@@ -6,6 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Box, ButtonBase, Avatar,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HistoryIcon from '@mui/icons-material/History';
 import FolderIcon from '@mui/icons-material/Folder';
 import ReviewsIcon from '@mui/icons-material/Reviews';
@@ -131,6 +132,17 @@ export default function ElementPage() {
             favorited={info?.favorited ?? false}
             onToggle={() => favoriteMutation.mutate(!info?.favorited)}
           />
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            onClick={() => {
+              void navigator.clipboard?.writeText(`skillhub install ${element.slug}`);
+              showSuccess('Команда скопирована');
+            }}
+          >
+            Команда установки
+          </Button>
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 1 }}>{element.description}</Typography>
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>

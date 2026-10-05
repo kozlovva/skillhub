@@ -73,3 +73,14 @@ test('favorite toggle calls setFavorite', async () => {
   await userEvent.click(btn);
   await waitFor(() => expect(social.setFavorite).toHaveBeenCalledWith('pdf-skill', true));
 });
+
+test('hero install button copies skillhub install command', async () => {
+  const writeText = vi.fn();
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText }, configurable: true,
+  });
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Команда установки' });
+  await userEvent.click(btn);
+  expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill');
+});
