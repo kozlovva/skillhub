@@ -36,8 +36,15 @@ public class JpaElementVersionRepositoryAdapter implements ElementVersionReposit
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<ElementVersion> findActiveByElementIdAndVersion(UUID elementId, String version) {
+        return jpa.findByElementIdAndVersionAndDeletedAtIsNull(elementId, version)
+            .map(ElementVersionJpaMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ElementVersion> findLatestPublished(UUID elementId) {
-        return jpa.findFirstByElementIdAndStatusOrderByPublishedAtDesc(
+        return jpa.findFirstByElementIdAndStatusAndDeletedAtIsNullOrderByPublishedAtDesc(
                 elementId, VersionStatus.PUBLISHED.name())
             .map(ElementVersionJpaMapper::toDomain);
     }
@@ -45,7 +52,7 @@ public class JpaElementVersionRepositoryAdapter implements ElementVersionReposit
     @Override
     @Transactional(readOnly = true)
     public List<ElementVersion> findAllByElementIdOrderByCreatedAtDesc(UUID elementId) {
-        return jpa.findAllByElementIdOrderByCreatedAtDesc(elementId).stream()
+        return jpa.findAllByElementIdAndDeletedAtIsNullOrderByCreatedAtDesc(elementId).stream()
             .map(ElementVersionJpaMapper::toDomain)
             .toList();
     }

@@ -78,6 +78,9 @@ public class ElementUseCase {
     public Element getBySlug(String slug, User viewer) {
         Element element = elements.findBySlug(slug)
             .orElseThrow(() -> new NotFoundException("Element not found: " + slug));
+        if (element.getDeletedAt() != null) {
+            throw new NotFoundException("Element not found: " + slug);
+        }
         if (!access.canRead(element, viewer)) {
             throw new ForbiddenException("Element is not visible to you: " + slug);
         }
@@ -87,6 +90,7 @@ public class ElementUseCase {
     @Transactional(readOnly = true)
     public List<Element> listVisible(User viewer) {
         return elements.findAll().stream()
+            .filter(e -> e.getDeletedAt() == null)
             .filter(e -> access.canRead(e, viewer))
             .toList();
     }

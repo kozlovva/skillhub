@@ -27,7 +27,8 @@ public class SearchAdapter implements SearchPort {
     private EntityManager em;
 
     private static final String BASE_WHERE = """
-        (e.visibility = 'PUBLIC'
+        e.deleted_at IS NULL
+        AND (e.visibility = 'PUBLIC'
          OR :admin = true
          OR e.team_id IN (SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
         AND (CAST(:category AS text) IS NULL OR e.category_id = (SELECT c.id FROM categories c WHERE c.slug = :category))

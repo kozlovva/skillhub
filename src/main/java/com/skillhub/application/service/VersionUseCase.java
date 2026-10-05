@@ -123,7 +123,7 @@ public class VersionUseCase {
         return "latest".equals(version)
             ? versions.findLatestPublished(element.getId())
                 .orElseThrow(() -> new NotFoundException("No published versions for: " + slug))
-            : versions.findByElementIdAndVersion(element.getId(), version)
+            : versions.findActiveByElementIdAndVersion(element.getId(), version)
                 .orElseThrow(() -> new NotFoundException(
                     "Version not found: " + slug + "@" + version));
     }

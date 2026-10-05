@@ -117,4 +117,16 @@ class ElementUseCaseTest {
         assertThatThrownBy(() -> useCase.getBySlug("h", null))
             .isInstanceOf(ForbiddenException.class);
     }
+
+    @Test
+    void deletedElementIsNotFound() {
+        Element deleted = Element.builder().id(UUID.randomUUID()).slug("gone")
+            .type(ElementType.SKILL).name("gone").description("").team(team)
+            .tags(new String[0]).visibility(Visibility.PUBLIC).author(owner)
+            .downloadsCount(0).createdAt(Instant.now()).updatedAt(Instant.now())
+            .deletedAt(Instant.parse("2026-02-01T00:00:00Z")).build();
+        when(elements.findBySlug("gone")).thenReturn(Optional.of(deleted));
+        assertThatThrownBy(() -> useCase.getBySlug("gone", owner))
+            .isInstanceOf(NotFoundException.class);
+    }
 }

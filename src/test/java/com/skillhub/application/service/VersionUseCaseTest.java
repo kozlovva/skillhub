@@ -140,6 +140,14 @@ class VersionUseCaseTest {
     }
 
     @Test
+    void deletedVersionIsNotReturnedByGetVersion() {
+        when(versions.findActiveByElementIdAndVersion(element.getId(), "1.0.0"))
+            .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.getVersion("my-skill", "1.0.0", owner))
+            .isInstanceOf(com.skillhub.core.exception.NotFoundException.class);
+    }
+
+    @Test
     void getArchiveReturnsPresignedUrlAndIncrementsDownloads() {
         ElementVersion version = ElementVersion.builder().id(UUID.randomUUID())
             .element(element).version("1.0.0").s3_key("platform/my-skill/1.0.0.zip").build();
