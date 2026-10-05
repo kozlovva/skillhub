@@ -86,7 +86,7 @@ test('hero install button copies skillhub install command', async () => {
     value: { writeText }, configurable: true,
   });
   renderPage();
-  const btn = await screen.findByRole('button', { name: 'Команда установки' });
+  const btn = await screen.findByRole('button', { name: 'skillhub install pdf-skill' });
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill');
   await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));

@@ -132,16 +132,19 @@ export default function ElementPage() {
             favorited={info?.favorited ?? false}
             onToggle={() => favoriteMutation.mutate(!info?.favorited)}
           />
+          <Box sx={{ flexGrow: 1 }} />
           <Button
             size="small"
             variant="outlined"
             startIcon={<ContentCopyIcon />}
+            title="Скопировать команду установки"
+            sx={{ fontFamily: '"JetBrains Mono", ui-monospace, monospace', textTransform: 'none' }}
             onClick={() => {
               void navigator.clipboard?.writeText(`skillhub install ${element.slug}`);
               showSuccess('Команда скопирована');
             }}
           >
-            Команда установки
+            skillhub install {element.slug}
           </Button>
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 1 }}>{element.description}</Typography>

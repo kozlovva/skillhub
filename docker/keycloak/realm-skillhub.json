@@ -23,11 +23,87 @@
                 ],
     "users":  [
                   {
+                      "id":  "b9f5b75c-245d-4c2d-8d84-37d42d1d7430",
                       "username":  "demo",
                       "enabled":  true,
                       "email":  "demo@skillhub.io",
                       "firstName":  "Demo",
                       "lastName":  "User",
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "demo123",
+                                              "temporary":  false
+                                          }
+                                      ]
+                  },
+                  {
+                      "id":  "30bc3744-ec61-4222-b71d-bd50b3137de3",
+                      "username":  "ivanov",
+                      "enabled":  true,
+                      "email":  "i.ivanov@skillhub.io",
+                      "firstName":  "Иван",
+                      "lastName":  "Иванов",
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "demo123",
+                                              "temporary":  false
+                                          }
+                                      ]
+                  },
+                  {
+                      "id":  "b1c3590f-fee7-4ab2-ad03-34e2da08cb16",
+                      "username":  "petrov",
+                      "enabled":  true,
+                      "email":  "p.petrov@skillhub.io",
+                      "firstName":  "Пётр",
+                      "lastName":  "Петров",
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "demo123",
+                                              "temporary":  false
+                                          }
+                                      ]
+                  },
+                  {
+                      "id":  "7fe72209-9b01-4948-a98f-bf121728eb1c",
+                      "username":  "sidorov",
+                      "enabled":  true,
+                      "email":  "s.sidorov@skillhub.io",
+                      "firstName":  "Сидор",
+                      "lastName":  "Сидоров",
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "demo123",
+                                              "temporary":  false
+                                          }
+                                      ]
+                  },
+                  {
+                      "id":  "c789edef-ca80-4301-9c87-e85d06b4632a",
+                      "username":  "smirnova",
+                      "enabled":  true,
+                      "email":  "a.smirnova@skillhub.io",
+                      "firstName":  "Анна",
+                      "lastName":  "Смирнова",
+                      "credentials":  [
+                                          {
+                                              "type":  "password",
+                                              "value":  "demo123",
+                                              "temporary":  false
+                                          }
+                                      ]
+                  },
+                  {
+                      "id":  "67dea57d-1d25-4864-9291-6378adeb07b8",
+                      "username":  "kuznetsov",
+                      "enabled":  true,
+                      "email":  "d.kuznetsov@skillhub.io",
+                      "firstName":  "Дмитрий",
+                      "lastName":  "Кузнецов",
                       "credentials":  [
                                           {
                                               "type":  "password",

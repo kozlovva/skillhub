@@ -177,6 +177,7 @@ export function createAppTheme(mode: AppThemeMode): Theme {
             backdropFilter: 'blur(8px)',
             borderBottom: `1px solid ${t.navRaised}`,
             color: t.navInk,
+            borderRadius: 0,
           },
         },
       },

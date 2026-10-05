@@ -131,7 +131,7 @@ export default function TokensPage() {
           onChange={(e) => setName(e.target.value)}
           sx={{ width: 220 }}
         />
-        <FormControl sx={{ width: 160 }}>
+        <FormControl size="small" sx={{ width: 160 }}>
           <InputLabel id="token-lifetime-label">Срок жизни</InputLabel>
           <Select
             labelId="token-lifetime-label"
