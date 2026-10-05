@@ -2,12 +2,14 @@ import {
   Table, TableHead, TableRow, TableCell, TableBody, Button, Chip, IconButton, Tooltip, Stack,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { VersionResponse } from '../types';
 
-export default function VersionTable({ versions, onDownload, onCopyInstall }: {
+export default function VersionTable({ versions, onDownload, onCopyInstall, onDelete }: {
   versions: VersionResponse[];
   onDownload: (version: string) => void;
   onCopyInstall: (version: string) => void;
+  onDelete?: (version: string) => void;
 }) {
   return (
     <Table size="small">
@@ -45,6 +47,17 @@ export default function VersionTable({ versions, onDownload, onCopyInstall }: {
                     <ContentCopyIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                {onDelete && (
+                  <Tooltip title="Удалить версию">
+                    <IconButton
+                      size="small"
+                      aria-label={`Удалить версию ${v.version}`}
+                      onClick={() => onDelete(v.version)}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Stack>
             </TableCell>
           </TableRow>

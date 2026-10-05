@@ -12,7 +12,7 @@ vi.mock('../layout/SnackbarContext', () => ({ useSnackbar: () => snackbar }));
 const element = vi.hoisted(() => ({
   slug: 'pdf-skill', type: 'SKILL' as const, name: 'PDF Skill', description: 'desc',
   team: 'platform', category: null, tags: ['pdf'], visibility: 'PUBLIC' as const,
-  latestVersion: '1.0.0', downloadsCount: 3,
+  latestVersion: '1.0.0', downloadsCount: 3, authorId: 'u-1',
 }));
 
 vi.mock('../api/elements', () => ({
@@ -26,6 +26,8 @@ vi.mock('../api/elements', () => ({
     publishVersion: vi.fn(),
     create: vi.fn(),
     list: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
+    removeVersion: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -43,7 +45,7 @@ vi.mock('../api/social', () => ({
 
 vi.mock('../auth/KeycloakProvider', () => ({
   useAuth: () => ({
-    authenticated: true, token: 't', displayName: 'A',
+    authenticated: true, token: 't', displayName: 'A', userId: 'u-1',
     isAdmin: false, myTeamRoles: { platform: 'OWNER' },
     teamRoleOf: (slug: string) => (slug === 'platform' ? 'OWNER' : null),
     login: vi.fn(), logout: vi.fn(),
@@ -102,4 +104,24 @@ test('version copy button copies versioned install command', async () => {
   await userEvent.click(btn);
   expect(writeText).toHaveBeenCalledWith('skillhub install pdf-skill@1.0.0');
   await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));
+});
+
+test('owner sees delete element button and confirms', async () => {
+  const { elements } = await import('../api/elements');
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Удалить элемент' });
+  await userEvent.click(btn);
+  const confirm = await screen.findByRole('button', { name: 'Удалить' });
+  await userEvent.click(confirm);
+  await waitFor(() => expect(elements.remove).toHaveBeenCalledWith('pdf-skill'));
+});
+
+test('version delete calls removeVersion after confirm', async () => {
+  const { elements } = await import('../api/elements');
+  renderPage();
+  const btn = await screen.findByRole('button', { name: 'Удалить версию 1.0.0' });
+  await userEvent.click(btn);
+  const confirm = await screen.findByRole('button', { name: 'Удалить' });
+  await userEvent.click(confirm);
+  await waitFor(() => expect(elements.removeVersion).toHaveBeenCalledWith('pdf-skill', '1.0.0'));
 });
