@@ -145,6 +145,17 @@ export default function UploadPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Paper sx={{ p: 3, width: '100%', maxWidth: 720 }}>
           <Stack spacing={2}>
+            <input
+              ref={fileInputRef}
+              hidden
+              type="file"
+              data-testid="version-file"
+              onChange={(e) => {
+                const next = e.target.files?.[0];
+                if (next) selectFile(next);
+              }}
+            />
+            {!archive?.ok && (
             <Box
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => {
@@ -170,16 +181,6 @@ export default function UploadPage() {
                 '&:hover': { borderColor: 'primary.main' },
               }}
             >
-              <input
-                ref={fileInputRef}
-                hidden
-                type="file"
-                data-testid="version-file"
-                onChange={(e) => {
-                  const next = e.target.files?.[0];
-                  if (next) selectFile(next);
-                }}
-              />
               <Stack alignItems="center" spacing={1}>
                 <UploadIcon color={dragOver ? 'primary' : 'disabled'} />
                 <Typography>
@@ -192,10 +193,12 @@ export default function UploadPage() {
                 )}
               </Stack>
             </Box>
+            )}
             {archive && !archive.ok && (
               <Alert severity="error" data-testid="archive-error">{archive.error}</Alert>
             )}
             {archive?.ok && (
+              <>
               <Paper variant="outlined" data-testid="archive-summary" sx={{ p: 2 }}>
                 <Typography variant="subtitle1">{archive.manifest.name}</Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -206,9 +209,16 @@ export default function UploadPage() {
                   <Typography variant="body2" sx={{ mt: 1 }}>{archive.manifest.description}</Typography>
                 )}
                 <Typography variant="caption" color="text.secondary">
-                  {archive.entries.length} файлов, {totalSize} байт
+                  {file?.name} · {archive.entries.length} файлов, {totalSize} байт
                 </Typography>
               </Paper>
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Заменить архив
+              </Button>
+              </>
             )}
             <Alert severity="info">
               <Typography variant="subtitle2" gutterBottom>Требования к архиву</Typography>
@@ -233,7 +243,7 @@ export default function UploadPage() {
 }`}
               </Box>
             </Alert>
-            <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="contained" onClick={() => setActiveStep(1)} disabled={!archive?.ok}>
                 Далее
               </Button>
@@ -355,7 +365,7 @@ export default function UploadPage() {
               </List>
             </Paper>
             <TextField label="Changelog" value={changelog} onChange={(e) => setChangelog(e.target.value)} />
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Button startIcon={<ArrowBackIcon />} onClick={() => setActiveStep(0)}>
                 Назад
               </Button>

@@ -149,13 +149,30 @@ test('step 1: non-zip file shows error and blocks step 2', async () => {
   expect(screen.getByRole('button', { name: 'Далее' })).toBeDisabled();
 });
 
+test('step 1: valid archive replaces dropzone with summary and replace button', async () => {
+  renderPage();
+  await screen.findByText('Требования к архиву');
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    makeZip(VALID_MANIFEST, { 'SKILL.md': '# hi' })
+  );
+  await screen.findByTestId('archive-summary');
+  expect(screen.queryByText(/Перетащите файл сюда/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Заменить архив' }));
+  await userEvent.upload(
+    screen.getByTestId('version-file'),
+    makeZip({ name: 'Other', version: '2.0.0', description: 'Другое', type: 'SCRIPT' })
+  );
+  expect(await screen.findByTestId('archive-summary')).toHaveTextContent('Other');
+});
+
 test('accepts a file via drag and drop', async () => {
   renderPage();
   await screen.findByText(/Перетащите файл сюда/);
   fireEvent.drop(screen.getByText(/Перетащите файл сюда/), {
     dataTransfer: { files: [makeZip(VALID_MANIFEST)] },
   });
-  expect(await screen.findByText('element.zip')).toBeInTheDocument();
+  expect(await screen.findByTestId('archive-summary')).toHaveTextContent('element.zip');
 });
 
 test('step 2: prefills name, slug, type and description from manifest', async () => {
