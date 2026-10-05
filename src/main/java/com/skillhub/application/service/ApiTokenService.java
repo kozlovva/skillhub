@@ -14,7 +14,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class ApiTokenService {
@@ -36,6 +39,11 @@ public class ApiTokenService {
 
     @Transactional
     public CreatedToken createToken(User user, String name) {
+        return createToken(user, name, null);
+    }
+
+    @Transactional
+    public CreatedToken createToken(User user, String name, Integer lifetimeDays) {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         String raw = prefix + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
@@ -44,6 +52,7 @@ public class ApiTokenService {
             .name(name)
             .tokenHash(hash(raw))
             .createdAt(clock.now())
+            .expiresAt(lifetimeDays == null ? null : clock.now().plus(lifetimeDays, ChronoUnit.DAYS))
             .build());
         return new CreatedToken(saved, raw);
     }
@@ -54,11 +63,22 @@ public class ApiTokenService {
             return Optional.empty();
         }
         return tokens.findByTokenHash(hash(rawToken))
+            .filter(t -> t.getRevokedAt() == null)
             .filter(t -> t.getExpiresAt() == null || t.getExpiresAt().isAfter(clock.now()))
             .map(t -> {
                 t.setLastUsedAt(clock.now());
                 return tokens.save(t).getUser();
             });
+    }
+
+    @Transactional
+    public void revokeToken(User user, UUID tokenId) {
+        ApiToken token = tokens.findByIdAndUserId(tokenId, user.getId())
+            .orElseThrow(() -> new NoSuchElementException("Token not found"));
+        if (token.getRevokedAt() == null) {
+            token.setRevokedAt(clock.now());
+            tokens.save(token);
+        }
     }
 
     public static String hash(String value) {
