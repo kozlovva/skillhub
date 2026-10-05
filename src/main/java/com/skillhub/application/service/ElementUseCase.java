@@ -14,6 +14,7 @@ import com.skillhub.domain.service.AccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -113,8 +114,9 @@ public class ElementUseCase {
                 .collect(Collectors.joining(", "));
             throw new ConflictException("Element is used in packs: " + packs);
         }
-        element.setDeletedAt(clock.now());
-        element.setUpdatedAt(clock.now());
+        Instant now = clock.now();
+        element.setDeletedAt(now);
+        element.setUpdatedAt(now);
         elements.save(element);
         audit.log(user, "DELETE_ELEMENT", element.getId(), Map.of("slug", slug));
     }

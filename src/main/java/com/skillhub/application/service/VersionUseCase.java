@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +127,8 @@ public class VersionUseCase {
                 "Version " + version + " is pinned by a pack");
         }
 
-        target.setDeletedAt(clock.now());
+        Instant now = clock.now();
+        target.setDeletedAt(now);
         versions.save(target);
 
         if (version.equals(element.getLatestVersion())) {
@@ -136,7 +138,7 @@ public class VersionUseCase {
                 .findFirst().orElse(null);
             element.setLatestVersion(next == null ? null : next.getVersion());
             element.setLatestChangelog(next == null ? "" : next.getChangelog());
-            element.setUpdatedAt(clock.now());
+            element.setUpdatedAt(now);
             elements.save(element);
         }
         audit.log(user, "DELETE_VERSION", element.getId(),

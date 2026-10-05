@@ -172,7 +172,8 @@ class ElementUseCaseTest {
         when(packContents.findAllByElementId(e.getId())).thenReturn(java.util.List.of(
             PackContent.builder().packElement(pack).element(e).versionConstraint("latest").build()));
         assertThatThrownBy(() -> useCase.delete("my-skill", owner))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("the-pack");
     }
 
     @Test
