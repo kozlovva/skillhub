@@ -17,4 +17,5 @@ public class ElementVersion {
     private User publishedBy;
     private Instant createdAt;
     private Instant publishedAt;
+    private Instant deletedAt;
 }
