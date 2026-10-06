@@ -38,7 +38,7 @@ services:
     ports:
       - "8180:8080"
   api:
-    build: .
+    build: ./backend
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"

@@ -23,7 +23,7 @@
 
 ## Технологический стек
 
-### Backend (`/`, Java 21)
+### Backend (`/backend`, Java 21)
 
 | Компонент | Технология |
 |-----------|-----------|
@@ -60,21 +60,23 @@ Node.js ≥ 18, TypeScript, Commander, adm-zip; тесты — Vitest.
 
 Docker Compose поднимает полный стенд: **PostgreSQL 16**, **MinIO**,
 **Keycloak 26** (realm `skillhub` импортируется автоматически), **API** и **UI**
-(Nginx). Dockerfile в корне — образ API, `ui/Dockerfile` — образ UI.
+(Nginx). `backend/Dockerfile` — образ API, `ui/Dockerfile` — образ UI.
 
 ## Структура репозитория
 
 ```
-├── src/                  # Backend (Spring Boot, Maven)
-│   └── main/resources/db/migration/   # Flyway-миграции (V1–V7)
-├── ui/                   # Frontend (React + Vite)
-├── cli/                  # CLI (@skillhub/cli)
-├── docker/               # конфиги инфраструктуры (Keycloak realm)
-├── scripts/seed-demo.ps1 # наполнение каталога демо-данными
-├── skills/               # скиллы проекта (code-stats)
-├── examples/             # примеры элементов разного типа (см. examples/README.md)
-├── docker-compose.yml    # полный стенд
-└── pom.xml
+├── backend/                # Backend (Spring Boot, Maven)
+│   ├── src/
+│   │   └── main/resources/db/migration/   # Flyway-миграции (V1–V8)
+│   ├── pom.xml
+│   └── Dockerfile          # образ API
+├── ui/                     # Frontend (React + Vite)
+├── cli/                    # CLI (@skillhub/cli)
+├── docker/                 # конфиги инфраструктуры (Keycloak realm)
+├── scripts/seed-demo.ps1   # наполнение каталога демо-данными
+├── skills/                 # скиллы проекта (code-stats)
+├── examples/               # примеры элементов разного типа (см. examples/README.md)
+└── docker-compose.yml      # полный стенд
 ```
 
 ## Быстрый старт
@@ -101,7 +103,7 @@ docker compose up -d --build
 docker compose up -d postgres minio keycloak
 
 # backend (Java 21 + Maven)
-mvn spring-boot:run
+cd backend && mvn spring-boot:run
 
 # frontend
 cd ui && npm install && npm run dev
@@ -147,7 +149,7 @@ REST API документирован через OpenAPI: `http://localhost:8080
 ## Тесты
 
 ```bash
-mvn verify                 # backend: unit + integration (Testcontainers)
+cd backend && mvn verify   # backend: unit + integration (Testcontainers)
 cd ui  && npm test         # frontend: vitest
 cd cli && npm test         # cli: vitest
 ```
