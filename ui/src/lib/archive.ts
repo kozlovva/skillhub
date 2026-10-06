@@ -41,8 +41,10 @@ export async function inspectArchive(file: File): Promise<ArchiveParseResult> {
           entryTooBig = true;
           return false;
         }
-        if (!f.name.endsWith('/')) entries.push({ path: f.name, size: f.originalSize });
-        return f.name === 'manifest.json';
+        const name = f.name.replace(/\\/g, '/');
+        if (!name.endsWith('/')) entries.push({ path: name, size: f.originalSize });
+        // keep root manifest plus manifests one level deep (Explorer-style wraps)
+        return name === 'manifest.json' || /^\/?[^/]+\/manifest\.json$/.test(name);
       },
     });
   } catch {
@@ -54,8 +56,24 @@ export async function inspectArchive(file: File): Promise<ArchiveParseResult> {
   if (entries.length > MAX_FILES) {
     return { ok: false, error: 'В архиве больше 5000 файлов' };
   }
-  const raw = contents['manifest.json'];
+  let raw = contents['manifest.json'];
+  let prefix = '';
+  if (!raw) {
+    // Explorer's "Compress to ZIP" wraps the folder: manifest lives under a
+    // single top-level directory. Accept it when ALL entries share that root.
+    for (const [name, bytes] of Object.entries(contents)) {
+      const m = /^([^/]+\/)manifest\.json$/.exec(name);
+      if (m && entries.every((e) => e.path.startsWith(m[1]))) {
+        raw = bytes;
+        prefix = m[1];
+        break;
+      }
+    }
+  }
   if (!raw) return { ok: false, error: 'В корне архива нет manifest.json' };
+  if (prefix) {
+    for (const e of entries) e.path = e.path.startsWith(prefix) ? e.path.slice(prefix.length) : e.path;
+  }
   let obj: Record<string, unknown>;
   try {
     obj = JSON.parse(strFromU8(raw));

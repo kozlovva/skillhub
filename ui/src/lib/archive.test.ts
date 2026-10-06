@@ -32,13 +32,40 @@ test('defaults description and type to empty strings', async () => {
   expect(res.manifest.type).toBe('');
 });
 
+test('accepts Explorer-style archive wrapped in single root folder', async () => {
+  const res = await inspectArchive(
+    zipFile({
+      'demo-skill/manifest.json': JSON.stringify({ name: 'demo-skill', version: '1.0.0', type: 'SKILL' }),
+      'demo-skill/SKILL.md': '# hi',
+      'demo-skill/scripts/run.sh': 'echo',
+    })
+  );
+  if (!res.ok) throw new Error(res.error);
+  expect(res.manifest.name).toBe('demo-skill');
+  expect(res.entries.map((e) => e.path)).toEqual(
+    expect.arrayContaining(['SKILL.md', 'scripts/run.sh'])
+  );
+});
+
+test('does not strip prefix when files are outside the wrapped folder', async () => {
+  const res = await inspectArchive(
+    zipFile({ 'manifest.json': JSON.stringify(VALID), 'SKILL.md': '# hi', 'extra/readme.md': 'hi' })
+  );
+  if (!res.ok) throw new Error(res.error);
+  expect(res.entries.map((e) => e.path)).toEqual(
+    expect.arrayContaining(['manifest.json', 'SKILL.md', 'extra/readme.md'])
+  );
+});
+
 test('rejects archive without manifest.json in root', async () => {
   const res = await inspectArchive(withManifest(null, { 'SKILL.md': '# hi' }));
   expect(res).toEqual({ ok: false, error: 'В корне архива нет manifest.json' });
 });
 
-test('ignores manifest.json outside root', async () => {
-  const res = await inspectArchive(zipFile({ 'docs/manifest.json': '{"name":"x","version":"1.0.0"}' }));
+test('rejects when manifest is nested but other files are outside that folder', async () => {
+  const res = await inspectArchive(
+    zipFile({ 'docs/manifest.json': '{"name":"x","version":"1.0.0"}', 'SKILL.md': '# hi' })
+  );
   expect(res).toEqual({ ok: false, error: 'В корне архива нет manifest.json' });
 });
 
