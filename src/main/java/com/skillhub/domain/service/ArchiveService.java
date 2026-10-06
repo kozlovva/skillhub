@@ -34,6 +34,7 @@ public class ArchiveService {
     public ArchiveInfo inspect(byte[] zipBytes) {
         List<FileEntry> files = new ArrayList<>();
         byte[] manifestBytes = null;
+        String manifestPath = null;
         long total = 0;
         int count = 0;
 
@@ -55,8 +56,9 @@ public class ArchiveService {
                     throw new UnprocessableException(
                         "Archive contains more than " + maxFiles + " files", null);
                 }
+                boolean isManifest = isManifestPath(path);
                 ByteArrayOutputStream manifestBuf =
-                    path.equals(MANIFEST) ? new ByteArrayOutputStream() : null;
+                    isManifest ? new ByteArrayOutputStream() : null;
                 long size = 0;
                 int read;
                 while ((read = zin.read(buffer)) != -1) {
@@ -70,7 +72,8 @@ public class ArchiveService {
                             "Uncompressed archive exceeds " + maxUncompressedBytes + " bytes", null);
                     }
                 }
-                if (manifestBuf != null) {
+                if (isManifest && (manifestPath == null || depth(path) < depth(manifestPath))) {
+                    manifestPath = path;
                     manifestBytes = manifestBuf.toByteArray();
                 }
                 files.add(new FileEntry(path, size));
@@ -83,6 +86,7 @@ public class ArchiveService {
             throw new UnprocessableException(
                 "Archive must contain " + MANIFEST + " in its root", null);
         }
+        stripCommonRoot(manifestPath, files);
 
         JsonNode manifest = parseManifest(new String(manifestBytes, StandardCharsets.UTF_8));
         String name = requiredText(manifest, "name");
@@ -104,6 +108,35 @@ public class ArchiveService {
             return null;
         }
         return cleaned;
+    }
+
+    /**
+     * Explorer-style archives wrap everything in one top-level folder
+     * ("skill/manifest.json", "skill/SKILL.md", ...). If the manifest lives in
+     * such a shared root directory, strip the prefix so paths match a root manifest.
+     */
+    private void stripCommonRoot(String manifestPath, List<FileEntry> files) {
+        if (manifestPath == null || manifestPath.equals(MANIFEST)) {
+            return;
+        }
+        String root = manifestPath.substring(0, manifestPath.indexOf('/') + 1);
+        boolean allInsideRoot = files.stream().allMatch(f -> f.path().startsWith(root));
+        if (!allInsideRoot) {
+            return;
+        }
+        files.replaceAll(f -> new FileEntry(f.path().substring(root.length()), f.size()));
+    }
+
+    private boolean isManifestPath(String path) {
+        return path.equals(MANIFEST) || path.endsWith("/" + MANIFEST);
+    }
+
+    private int depth(String path) {
+        int d = 0;
+        for (int i = path.indexOf('/'); i >= 0; i = path.indexOf('/', i + 1)) {
+            d++;
+        }
+        return d;
     }
 
     private JsonNode parseManifest(String json) {

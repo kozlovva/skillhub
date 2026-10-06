@@ -59,6 +59,34 @@ class ArchiveServiceTest {
     }
 
     @Test
+    void acceptsArchiveWrappedInSingleRootFolder() {
+        // Windows Explorer "Compress to ZIP" wraps the folder: all entries
+        // live under one top-level directory with manifest.json inside it.
+        Map<String, String> entries = new HashMap<>();
+        entries.put("demo-skill/", "");
+        entries.put("demo-skill/manifest.json",
+            "{\"name\":\"demo-skill\",\"version\":\"1.0.0\",\"type\":\"SKILL\"}");
+        entries.put("demo-skill/SKILL.md", "# skill");
+        entries.put("demo-skill/scripts/run.sh", "echo hi");
+
+        ArchiveInfo info = service.inspect(zip(entries));
+
+        assertThat(info.manifestName()).isEqualTo("demo-skill");
+        assertThat(info.manifestVersion()).isEqualTo("1.0.0");
+        assertThat(info.files()).extracting(com.skillhub.domain.model.FileEntry::path)
+            .containsExactlyInAnyOrder("manifest.json", "SKILL.md", "scripts/run.sh");
+    }
+
+    @Test
+    void doesNotStripWhenFilesAreOutsideWrappedFolder() {
+        Map<String, String> entries = new HashMap<>(validEntries());
+        entries.put("extra/readme.md", "hi");
+        ArchiveInfo info = service.inspect(zip(entries));
+        assertThat(info.files()).extracting(com.skillhub.domain.model.FileEntry::path)
+            .containsExactlyInAnyOrder("manifest.json", "SKILL.md", "scripts/run.sh", "extra/readme.md");
+    }
+
+    @Test
     void rejectsMissingManifest() {
         Map<String, String> entries = new HashMap<>();
         entries.put("SKILL.md", "# skill");
