@@ -78,6 +78,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/elements/pdf-skill']}>
         <Routes>
           <Route path="/elements/:slug" element={<ElementPage />} />
+          <Route path="/catalog" element={<div data-testid="catalog-page" />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -123,7 +124,7 @@ test('version copy button copies versioned install command', async () => {
   await waitFor(() => expect(snackbar.showSuccess).toHaveBeenCalledWith('Команда скопирована'));
 });
 
-test('owner sees delete element button and confirms', async () => {
+test('owner sees delete element button, confirms and is redirected to catalog', async () => {
   const { elements } = await import('../api/elements');
   renderPage();
   const btn = await screen.findByRole('button', { name: 'Удалить элемент' });
@@ -131,6 +132,8 @@ test('owner sees delete element button and confirms', async () => {
   const confirm = await screen.findByRole('button', { name: 'Удалить' });
   await userEvent.click(confirm);
   await waitFor(() => expect(elements.remove).toHaveBeenCalledWith('pdf-skill'));
+  expect(await screen.findByTestId('catalog-page')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Удалить элемент' })).not.toBeInTheDocument();
 });
 
 test('version delete calls removeVersion after confirm', async () => {
