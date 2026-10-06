@@ -58,7 +58,7 @@ class JpaElementRepositoryAdapterIT {
     }
 
     @Test
-    void findBySlugExcludesSoftDeletedElementButSlugStaysTaken() {
+    void findBySlugExcludesSoftDeletedElementAndSlugIsReusable() {
         User author = users.save(User.builder()
             .ssoSubject("softdel-sub").email("softdel@b.c").displayName("Soft")
             .admin(false).createdAt(Instant.now()).build());
@@ -73,6 +73,6 @@ class JpaElementRepositoryAdapterIT {
 
         assertThat(elements.findBySlug("soft-deleted-element")).isEmpty();
         assertThat(elements.existsBySlug("soft-deleted-element"))
-            .as("deleted slug must not be reusable").isTrue();
+            .as("deleted slug must be reusable").isFalse();
     }
 }

@@ -157,6 +157,23 @@ class ElementApiIT {
     }
 
     @Test
+    void slugCanBeReusedAfterElementDelete() {
+        createCategory();
+        rest.exchange("/api/elements", HttpMethod.POST,
+            new HttpEntity<>(skillRequest("reused-skill"), jsonHeaders()), String.class);
+        ResponseEntity<String> del = rest.exchange("/api/elements/reused-skill", HttpMethod.DELETE,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(del.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> recreated = rest.exchange("/api/elements", HttpMethod.POST,
+            new HttpEntity<>(skillRequest("reused-skill"), jsonHeaders()), String.class);
+        assertThat(recreated.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<String> got = rest.exchange("/api/elements/reused-skill", HttpMethod.GET,
+            new HttpEntity<>(jsonHeaders()), String.class);
+        assertThat(got.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void deleteElementInPackConflicts() {
         createCategory();
         rest.exchange("/api/elements", HttpMethod.POST,

@@ -79,6 +79,13 @@ class ElementUseCaseTest {
     }
 
     @Test
+    void slugOfSoftDeletedElementCanBeReused() {
+        when(elements.existsBySlug("my-skill")).thenReturn(false);
+        Element created = useCase.create(cmd("my-skill"), owner);
+        assertThat(created.getSlug()).isEqualTo("my-skill");
+    }
+
+    @Test
     void memberCannotCreate() {
         when(membership.roleOf(team.getId(), owner.getId()))
             .thenReturn(Optional.of(TeamRole.MEMBER));

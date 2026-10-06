@@ -13,6 +13,7 @@ public interface JpaElementRepository extends JpaRepository<JpaElement, UUID> {
     Optional<JpaElement> findBySlug(String slug);
     Optional<JpaElement> findBySlugAndDeletedAtIsNull(String slug);
     boolean existsBySlug(String slug);
+    boolean existsBySlugAndDeletedAtIsNull(String slug);
 
     @Modifying
     @Query("update JpaElement e set e.downloadsCount = e.downloadsCount + 1 where e.id = :id")

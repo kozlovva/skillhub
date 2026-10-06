@@ -38,7 +38,8 @@ public class JpaElementRepositoryAdapter implements ElementRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public boolean existsBySlug(String slug) {
-        return jpa.existsBySlug(slug);
+        // Soft-deleted elements must not block slug reuse.
+        return jpa.existsBySlugAndDeletedAtIsNull(slug);
     }
 
     @Override
